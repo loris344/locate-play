@@ -18,9 +18,17 @@ export default function Auth() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // With HashRouter, query params are after the hash: /#/auth?redirect=/game
+  const getRedirect = () => {
+    const hash = window.location.hash; // e.g. #/auth?redirect=/game
+    const qIndex = hash.indexOf('?');
+    if (qIndex === -1) return '/';
+    const params = new URLSearchParams(hash.slice(qIndex));
+    return params.get('redirect') || '/';
+  };
+
   if (user) {
-    const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
-    navigate(redirectTo);
+    navigate(getRedirect());
     return null;
   }
 
