@@ -46,9 +46,9 @@ export default function Index() {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            PORNO
+            GEO
             <br />
-            GUESSR
+            GUSHING
           </motion.h1>
           <motion.p
             className="text-muted-foreground text-lg font-medium"
