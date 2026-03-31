@@ -19,7 +19,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
 
   if (user) {
-    navigate("/");
+    const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
+    navigate(redirectTo);
     return null;
   }
 
