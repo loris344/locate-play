@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, Video } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import GameMap from '@/components/GameMap';
 import GameMapErrorBoundary from '@/components/GameMapErrorBoundary';
 import VideoPlayer from '@/components/VideoPlayer';
@@ -24,12 +25,13 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 function calculateScore(distance: number): number {
-  if (distance < 50) return MAX_SCORE_PER_ROUND;
-  return Math.max(0, Math.round(MAX_SCORE_PER_ROUND * Math.exp(-distance / 2000)));
+  if (distance < 25) return MAX_SCORE_PER_ROUND;
+  return Math.max(0, Math.round(MAX_SCORE_PER_ROUND * Math.exp(-distance / 500)));
 }
 
 export default function Game() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -63,7 +65,7 @@ export default function Game() {
       }
 
       const shuffled = data.sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
-      setVideos(shuffled as Video[]);
+      setVideos(shuffled);
       setLoading(false);
     }
 
@@ -94,6 +96,14 @@ export default function Game() {
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
       setGameOver(true);
+      if (user) {
+        supabase.from('game_scores').insert({
+          user_id: user.id,
+          total_score: totalScore,
+        }).then(({ error }) => {
+          if (error) console.error('[PORNOGUESSR] Failed to save score:', error);
+        });
+      }
       return;
     }
     setCurrentRound(prev => prev + 1);
