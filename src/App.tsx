@@ -1,17 +1,39 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Crown } from "lucide-react";
 import Index from "./pages/Index.tsx";
 import Game from "./pages/Game.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
 import Leaderboard from "./pages/Leaderboard.tsx";
 import Subscription from "./pages/Subscription.tsx";
-import { AuthProvider } from "./contexts/AuthContext.tsx";
+import { AuthProvider, useAuth } from "./contexts/AuthContext.tsx";
 
 const queryClient = new QueryClient();
+
+function GlobalNav() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Don't show on home (already has its own nav) or on subscription page
+  if (!user || location.pathname === '/' || location.pathname === '/subscription') return null;
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => navigate('/subscription')}
+      className="fixed top-3 right-3 z-50 font-bold"
+    >
+      <Crown className="h-4 w-4 mr-1" /> My Plan
+    </Button>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -20,6 +42,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <HashRouter>
+          <GlobalNav />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

@@ -27,10 +27,11 @@ export default function Auth() {
     return params.get('redirect') || '/';
   };
 
-  if (user) {
-    navigate(getRedirect());
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate(getRedirect(), { replace: true });
+    }
+  }, [user]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
