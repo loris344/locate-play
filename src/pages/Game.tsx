@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase, Video } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGameAccess } from "@/hooks/useGameAccess";
 import GameMap from "@/components/GameMap";
 import GameMapErrorBoundary from "@/components/GameMapErrorBoundary";
 import VideoPlayer from "@/components/VideoPlayer";
 import ScoreDisplay from "@/components/ScoreDisplay";
+import StripePaywall from "@/components/StripePaywall";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
