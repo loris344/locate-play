@@ -74,9 +74,9 @@ export default function RoundTimer({ isActive, onTimeUp, onElapsedChange }: Roun
  */
 export function getTimeMultiplier(elapsedSeconds: number): number {
   if (elapsedSeconds >= ROUND_TIME) return 0;
-  if (elapsedSeconds < 10) return 1.5;
-  if (elapsedSeconds < 30) return 1.2;
-  if (elapsedSeconds < 45) return 1.0;
+  if (elapsedSeconds < 20) return 1.5;
+  if (elapsedSeconds < 60) return 1.2;
+  if (elapsedSeconds < 90) return 1.0;
   return 0.7;
 }
 
