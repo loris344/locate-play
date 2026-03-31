@@ -1,77 +1,68 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Timer } from "lucide-react";
 
-const ROUND_TIME = 120; // seconds
+const ROUND_TIME = 120;
 
 interface RoundTimerProps {
-  isActive: boolean;
+  roundId: number;
+  stopped: boolean;
   onTimeUp: () => void;
   onElapsedChange?: (elapsed: number) => void;
 }
 
-export default function RoundTimer({ isActive, onTimeUp, onElapsedChange }: RoundTimerProps) {
+export default function RoundTimer({ roundId, stopped, onTimeUp, onElapsedChange }: RoundTimerProps) {
+  const [deadline, setDeadline] = useState(() => Date.now() + ROUND_TIME * 1000);
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number>(Date.now());
 
+  // Reset deadline only when round changes
   useEffect(() => {
-    // Reset on new round
+    setDeadline(Date.now() + ROUND_TIME * 1000);
     setTimeLeft(ROUND_TIME);
-    startTimeRef.current = Date.now();
-  }, [isActive]);
+  }, [roundId]);
 
   useEffect(() => {
-    if (!isActive) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
+    if (stopped) return;
 
-    startTimeRef.current = Date.now();
-    intervalRef.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
-      const remaining = Math.max(0, ROUND_TIME - elapsed);
+    const id = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setTimeLeft(remaining);
+      const elapsed = ROUND_TIME - remaining;
       onElapsedChange?.(elapsed);
 
       if (remaining <= 0) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
+        clearInterval(id);
         onTimeUp();
       }
-    }, 100);
+    }, 250);
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isActive, onTimeUp, onElapsedChange]);
+    return () => clearInterval(id);
+  }, [deadline, stopped, onTimeUp, onElapsedChange]);
 
   const percentage = (timeLeft / ROUND_TIME) * 100;
   const color =
-    timeLeft > 30 ? "text-green-500" : timeLeft > 15 ? "text-yellow-500" : "text-red-500";
+    timeLeft > 60 ? "text-green-500" : timeLeft > 30 ? "text-yellow-500" : "text-red-500";
   const bgColor =
-    timeLeft > 30 ? "bg-green-500" : timeLeft > 15 ? "bg-yellow-500" : "bg-red-500";
+    timeLeft > 60 ? "bg-green-500" : timeLeft > 30 ? "bg-yellow-500" : "bg-red-500";
+
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
 
   return (
     <div className="flex items-center gap-2">
       <Timer className={`w-4 h-4 ${color}`} />
-      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full ${bgColor} rounded-full transition-all duration-200`}
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className={`font-black text-sm tabular-nums ${color}`}>{timeLeft}s</span>
+      <span className={`font-black text-sm tabular-nums ${color}`}>
+        {mins}:{secs.toString().padStart(2, "0")}
+      </span>
     </div>
   );
 }
 
-/**
- * Calculate time multiplier:
- * - Under 10s: 1.5x bonus
- * - 10-30s: 1.2x bonus  
- * - 30-45s: 1.0x (no change)
- * - 45-60s: 0.7x penalty
- * - Time ran out (60s): 0x
- */
 export function getTimeMultiplier(elapsedSeconds: number): number {
   if (elapsedSeconds >= ROUND_TIME) return 0;
   if (elapsedSeconds < 20) return 1.5;
