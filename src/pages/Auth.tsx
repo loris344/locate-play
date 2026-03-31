@@ -41,8 +41,7 @@ export default function Auth() {
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
-        navigate(redirectTo);
+        navigate(getRedirect());
       }
     } else {
       const { error } = await supabase.auth.signUp({
