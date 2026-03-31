@@ -126,11 +126,13 @@ export function useGameAccess(): GameAccess {
 
       if (error) {
         console.error('[GEOGUSHING] Daily games count failed:', error);
+        // Fail-closed: block extra free games if DB counting is unavailable
+        setGamesPlayedToday(Math.max(localUserCount, MAX_DAILY_GAMES));
+      } else {
+        const dbCount = count || 0;
+        const safeCount = Math.max(dbCount, localUserCount);
+        setGamesPlayedToday(safeCount);
       }
-
-      const dbCount = count || 0;
-      const safeCount = Math.max(dbCount, localUserCount);
-      setGamesPlayedToday(safeCount);
       setLoading(false);
     }
 
