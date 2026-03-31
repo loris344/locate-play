@@ -258,6 +258,8 @@ export default function Game() {
                 score={roundResult.score}
                 city={currentVideo.city}
                 country={currentVideo.country}
+                timeMultiplier={roundResult.timeMultiplier}
+                baseScore={roundResult.baseScore}
               />
             )}
           </AnimatePresence>
