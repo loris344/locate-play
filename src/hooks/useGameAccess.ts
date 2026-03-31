@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ANON_GAME_KEY = 'geogushing_anon_games';
+const USER_GAME_KEY_PREFIX = 'geogushing_user_games_';
 const MAX_ANON_GAMES = 1;
 const MAX_DAILY_GAMES = 2;
 
@@ -15,12 +16,29 @@ interface GameAccess {
   recordGamePlayed: () => void;
 }
 
+function getTodayKey() {
+  return new Date().toISOString().split('T')[0];
+}
+
 function getAnonGamesPlayed(): number {
   const stored = localStorage.getItem(ANON_GAME_KEY);
   if (!stored) return 0;
   try {
     const { count, date } = JSON.parse(stored);
-    if (date !== new Date().toISOString().split('T')[0]) return 0;
+    if (date !== getTodayKey()) return 0;
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+function getUserGamesPlayed(userId: string): number {
+  const key = `${USER_GAME_KEY_PREFIX}${userId}`;
+  const stored = localStorage.getItem(key);
+  if (!stored) return 0;
+  try {
+    const { count, date } = JSON.parse(stored);
+    if (date !== getTodayKey()) return 0;
     return count;
   } catch {
     return 0;
@@ -28,9 +46,14 @@ function getAnonGamesPlayed(): number {
 }
 
 function incrementAnonGames() {
-  const today = new Date().toISOString().split('T')[0];
   const current = getAnonGamesPlayed();
-  localStorage.setItem(ANON_GAME_KEY, JSON.stringify({ count: current + 1, date: today }));
+  localStorage.setItem(ANON_GAME_KEY, JSON.stringify({ count: current + 1, date: getTodayKey() }));
+}
+
+function incrementUserGames(userId: string) {
+  const key = `${USER_GAME_KEY_PREFIX}${userId}`;
+  const current = getUserGamesPlayed(userId);
+  localStorage.setItem(key, JSON.stringify({ count: current + 1, date: getTodayKey() }));
 }
 
 function getUtcDayRange() {
@@ -56,7 +79,8 @@ export function useGameAccess(): GameAccess {
         return;
       }
 
-      // Check subscription
+      const localUserCount = getUserGamesPlayed(user.id);
+
       const { data: sub, error: subError } = await supabase
         .from('subscriptions')
         .select('status, expires_at')
@@ -80,7 +104,6 @@ export function useGameAccess(): GameAccess {
         return;
       }
 
-      // Count today's games in UTC (hard limit source of truth)
       const { startIso, endIso } = getUtcDayRange();
 
       let { count, error } = await supabase
@@ -90,7 +113,6 @@ export function useGameAccess(): GameAccess {
         .gte('created_at', startIso)
         .lte('created_at', endIso);
 
-      // Fallback for schemas using played_at instead of created_at
       if (error) {
         const fallback = await supabase
           .from('game_scores')
@@ -104,12 +126,11 @@ export function useGameAccess(): GameAccess {
 
       if (error) {
         console.error('[GEOGUSHING] Daily games count failed:', error);
-        // Fail closed: if counting fails, do not allow extra free games
-        setGamesPlayedToday(MAX_DAILY_GAMES);
-      } else {
-        setGamesPlayedToday(count || 0);
       }
 
+      const dbCount = count || 0;
+      const safeCount = Math.max(dbCount, localUserCount);
+      setGamesPlayedToday(safeCount);
       setLoading(false);
     }
 
@@ -133,9 +154,12 @@ export function useGameAccess(): GameAccess {
     if (!user) {
       incrementAnonGames();
       setGamesPlayedToday(getAnonGamesPlayed());
-    } else {
-      setGamesPlayedToday(prev => prev + 1);
+      return;
     }
+
+    incrementUserGames(user.id);
+    const localCount = getUserGamesPlayed(user.id);
+    setGamesPlayedToday(prev => Math.max(prev + 1, localCount));
   };
 
   return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, recordGamePlayed };
