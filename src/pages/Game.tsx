@@ -192,15 +192,7 @@ export default function Game() {
           ) : (
             <div className="space-y-4">
               <p className="font-bold text-primary">No games left today. Choose a plan to keep playing!</p>
-              <div className="w-full" dangerouslySetInnerHTML={{
-                __html: `
-                  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
-                  <stripe-pricing-table
-                    pricing-table-id="prctbl_1TH1mMGxRwR5OjMT5TlwsDZf"
-                    publishable-key="pk_test_51TH15hGxRwR5OjMTKbMwEepA3ww5XKmUSimKNa8jWhoy35Zv2GzZ0914oSpKPpwASrksruRs98cMlewLTCLKLgRB00UgIEaiaJ">
-                  </stripe-pricing-table>
-                `
-              }} />
+              <StripePricingTable />
               <Button onClick={() => navigate("/")} variant="outline">
                 Home
               </Button>
