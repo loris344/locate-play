@@ -1,15 +1,17 @@
-import paris from '@/assets/mosaic/paris.jpg';
-import tokyo from '@/assets/mosaic/tokyo.jpg';
-import newyork from '@/assets/mosaic/newyork.jpg';
-import beach from '@/assets/mosaic/beach.jpg';
-import machupicchu from '@/assets/mosaic/machupicchu.jpg';
-import dubai from '@/assets/mosaic/dubai.jpg';
-import rio from '@/assets/mosaic/rio.jpg';
-import iceland from '@/assets/mosaic/iceland.jpg';
+const photos = Array.from({ length: 37 }, (_, i) => {
+  const n = i + 1;
+  const ext = [2,10,20,25,29].includes(n) ? 'avif'
+    : [3,9,11,14,19,24,30,31,33,36].includes(n) ? 'webp'
+    : [5,6,8,21,23].includes(n) ? 'png'
+    : n === 34 ? 'jpeg'
+    : 'jpg';
+  return `/model/paysage${n}.${ext}`;
+});
 
-const row1 = [paris, tokyo, newyork, beach, machupicchu, dubai, rio, iceland];
-const row2 = [dubai, beach, iceland, paris, rio, newyork, machupicchu, tokyo];
-const row3 = [machupicchu, rio, dubai, tokyo, paris, iceland, beach, newyork];
+const row1 = photos.slice(0, 10);
+const row2 = photos.slice(10, 20);
+const row3 = photos.slice(20, 30);
+const row4 = photos.slice(30, 37);
 
 function ScrollRow({ images, duration, reverse = false }: { images: string[]; duration: number; reverse?: boolean }) {
   const doubled = [...images, ...images];
@@ -40,6 +42,7 @@ export default function InfinitePhotoMosaic() {
         <ScrollRow images={row1} duration={40} />
         <ScrollRow images={row2} duration={35} reverse />
         <ScrollRow images={row3} duration={45} />
+        <ScrollRow images={row4} duration={38} reverse />
       </div>
     </div>
   );
