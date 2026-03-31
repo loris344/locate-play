@@ -44,9 +44,9 @@ export default function Game() {
   useEffect(() => {
     async function fetchVideos() {
       setLoading(true);
-      console.log("[PORNOGUESSR] Fetching videos from Supabase...");
+      console.log("[GEOGUSHING] Fetching videos from Supabase...");
       const { data, error } = await supabase.from("videos").select("*").limit(50);
-      console.log("[PORNOGUESSR] Result:", { data, error });
+      console.log("[GEOGUSHING] Result:", { data, error });
 
       if (error) {
         setError(`Failed to load videos: ${error.message}`);
@@ -100,7 +100,7 @@ export default function Game() {
             total_score: totalScore,
           })
           .then(({ error }) => {
-            if (error) console.error("[PORNOGUESSR] Failed to save score:", error);
+            if (error) console.error("[GEOGUSHING] Failed to save score:", error);
           });
       }
       return;
