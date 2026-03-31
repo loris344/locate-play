@@ -130,11 +130,11 @@ export default function Subscription() {
             href="https://instagram.com/loris_dtg"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors mx-auto w-fit"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mx-auto w-fit text-xs"
           >
-            <img src={lorisImg} alt="Loris" className="w-8 h-8 rounded-full object-cover" />
-            <span className="text-xs">Questions? DM <span className="font-medium">@loris_dtg</span></span>
-            <Instagram className="w-4 h-4" />
+            <img src={lorisImg} alt="" className="w-7 h-7 rounded-full object-cover" />
+            <span>Bug or question?</span>
+            <Instagram className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>
