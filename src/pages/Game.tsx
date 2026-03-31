@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase, Video } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGameAccess } from "@/hooks/useGameAccess";
 import GameMap from "@/components/GameMap";
 import GameMapErrorBoundary from "@/components/GameMapErrorBoundary";
 import VideoPlayer from "@/components/VideoPlayer";
 import ScoreDisplay from "@/components/ScoreDisplay";
+import StripePaywall from "@/components/StripePaywall";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
@@ -31,6 +33,7 @@ function calculateScore(distance: number): number {
 export default function Game() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const gameAccess = useGameAccess();
   const [videos, setVideos] = useState<Video[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -92,6 +95,7 @@ export default function Game() {
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
       setGameOver(true);
+      gameAccess.recordGamePlayed();
       if (user) {
         supabase
           .from("game_scores")
@@ -111,7 +115,12 @@ export default function Game() {
     setRoundResult(null);
   };
 
-  if (loading) {
+  // Access control check
+  if (!gameAccess.loading && !gameAccess.canPlay) {
+    return <StripePaywall reason={gameAccess.reason as 'signin_required' | 'paywall'} />;
+  }
+
+  if (loading || gameAccess.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
