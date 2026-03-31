@@ -6,29 +6,24 @@ interface VideoPlayerProps {
 
 const DIRECT_VIDEO_PATTERN = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i;
 
-function getEmbedUrl(url: string) {
+function getSourceInfo(url: string) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, '');
+    const isDirectVideo = DIRECT_VIDEO_PATTERN.test(url);
+    const isKnownEmbed =
+      (host === 'xnxx.com' && parsed.pathname.includes('/embedframe/')) ||
+      (host === 'pornhub.com' && parsed.pathname.includes('/embed/'));
 
-    if (host === 'xnxx.com' && parsed.pathname.includes('/embedframe/')) {
-      return parsed.toString();
-    }
-
-    if (host === 'pornhub.com' && parsed.pathname.includes('/embed/')) {
-      return parsed.toString();
-    }
-
-    return null;
+    return { host, isDirectVideo, isKnownEmbed };
   } catch {
-    return null;
+    return { host: 'unknown source', isDirectVideo: false, isKnownEmbed: false };
   }
 }
 
 export default function VideoPlayer({ url }: VideoPlayerProps) {
   const [videoFailed, setVideoFailed] = useState(false);
-  const isDirectVideo = useMemo(() => DIRECT_VIDEO_PATTERN.test(url), [url]);
-  const embedUrl = useMemo(() => getEmbedUrl(url), [url]);
+  const { host, isDirectVideo, isKnownEmbed } = useMemo(() => getSourceInfo(url), [url]);
 
   return (
     <div className="overflow-hidden rounded-lg border-2 border-border bg-card shadow-neon">
@@ -45,37 +40,32 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
           >
             Your browser does not support the video tag.
           </video>
-        ) : embedUrl ? (
-          <iframe
-            src={embedUrl}
-            title="Game video"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            className="h-full w-full border-0"
-          />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-lg font-black text-foreground">Unsupported video source</p>
-            <p className="max-w-md text-sm text-muted-foreground">
-              This row contains a page URL instead of a direct video file or supported embed URL.
-            </p>
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+            <div className="space-y-2">
+              <p className="text-xl font-black text-foreground">Video preview unavailable</p>
+              <p className="text-sm text-muted-foreground">
+                {isKnownEmbed
+                  ? `This ${host} embed URL is being returned by Supabase, but many adult sites block reliable in-app playback.`
+                  : 'This row does not contain a direct video file that the browser can play inline.'}
+              </p>
+            </div>
+
             <a
               href={url}
               target="_blank"
               rel="noreferrer"
-              className="font-bold text-primary underline underline-offset-4"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-black text-primary-foreground transition-opacity hover:opacity-90"
             >
-              Open source in a new tab
+              Open clip in new tab
             </a>
+
+            <p className="max-w-md text-xs text-muted-foreground">
+              For inline playback here, store a direct <span className="font-bold text-foreground">.mp4</span> or <span className="font-bold text-foreground">.webm</span> URL in <span className="font-bold text-foreground">video_url</span>.
+            </p>
           </div>
         )}
       </div>
-
-      {!isDirectVideo && embedUrl && (
-        <div className="border-t border-border bg-card px-4 py-3 text-center text-sm text-muted-foreground">
-          Embedded source loaded from the URL stored in Supabase.
-        </div>
-      )}
     </div>
   );
 }
