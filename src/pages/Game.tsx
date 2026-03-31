@@ -191,8 +191,8 @@ export default function Game() {
         </div>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-0 lg:gap-4 p-1 lg:p-4 h-[calc(100vh-57px)] overflow-hidden">
-        <div className="flex flex-col min-h-0 flex-1 lg:flex-auto">
+      <div className="grid grid-rows-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-hidden">
+        <div className="min-h-0 flex flex-col">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
 
           <AnimatePresence>
@@ -207,38 +207,36 @@ export default function Game() {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col min-h-0 flex-1 lg:flex-auto">
-          <div className="flex-1 min-h-[120px] lg:min-h-[300px]">
-            <GameMapErrorBoundary>
-              <GameMap
-                onGuess={handleGuess}
-                guessMarker={guessMarker}
-                answerMarker={answerMarker}
-                disabled={!!roundResult}
-              />
-            </GameMapErrorBoundary>
-          </div>
+        <div className="min-h-0">
+          <GameMapErrorBoundary>
+            <GameMap
+              onGuess={handleGuess}
+              guessMarker={guessMarker}
+              answerMarker={answerMarker}
+              disabled={!!roundResult}
+            />
+          </GameMapErrorBoundary>
+        </div>
 
-          <div className="flex gap-3 shrink-0 p-1 lg:p-0 lg:pt-4">
-            {!roundResult ? (
-              <Button
-                onClick={handleSubmitGuess}
-                disabled={!guessMarker}
-                className="flex-1 bg-gradient-hot font-black text-lg h-12 shadow-glow animate-pulse-glow disabled:opacity-50 disabled:animate-none"
-              >
-                <MapPin className="mr-2 h-5 w-5" />
-                GUESS!
-              </Button>
-            ) : (
-              <Button
-                onClick={handleNextRound}
-                className="flex-1 bg-secondary text-secondary-foreground font-black text-lg h-12"
-              >
-                {currentRound + 1 >= TOTAL_ROUNDS ? "SEE RESULTS" : "NEXT ROUND"}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            )}
-          </div>
+        <div className="flex gap-3 pb-[max(env(safe-area-inset-bottom),4px)] lg:col-span-1 lg:col-start-2">
+          {!roundResult ? (
+            <Button
+              onClick={handleSubmitGuess}
+              disabled={!guessMarker}
+              className="flex-1 bg-gradient-hot font-black text-lg h-12 shadow-glow animate-pulse-glow disabled:opacity-50 disabled:animate-none"
+            >
+              <MapPin className="mr-2 h-5 w-5" />
+              GUESS!
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNextRound}
+              className="flex-1 bg-secondary text-secondary-foreground font-black text-lg h-12"
+            >
+              {currentRound + 1 >= TOTAL_ROUNDS ? "SEE RESULTS" : "NEXT ROUND"}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
