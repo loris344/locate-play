@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, Video } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameAccess } from "@/hooks/useGameAccess";
