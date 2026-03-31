@@ -64,15 +64,15 @@ export function useGameAccess(): GameAccess {
         }
       }
 
-      // Count today's games
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // Count today's games (use UTC to avoid timezone issues)
+      const now = new Date();
+      const todayUTC = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}T00:00:00.000Z`;
 
       const { count } = await supabase
         .from('game_scores')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .gte('played_at', todayStart.toISOString());
+        .gte('played_at', todayUTC);
 
       setGamesPlayedToday(count || 0);
       setLoading(false);
