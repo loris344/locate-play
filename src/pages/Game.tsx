@@ -41,7 +41,7 @@ export default function Game() {
   const [totalScore, setTotalScore] = useState(0);
   const [guessMarker, setGuessMarker] = useState<[number, number] | null>(null);
   const [answerMarker, setAnswerMarker] = useState<[number, number] | null>(null);
-  const [roundResult, setRoundResult] = useState<{ distance: number; score: number } | null>(null);
+  const [roundResult, setRoundResult] = useState<{ distance: number; score: number; timeMultiplier: number; baseScore: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
