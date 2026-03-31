@@ -71,7 +71,7 @@ export default function Leaderboard() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-foreground truncate">{entry.username}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(entry.played_at).toLocaleDateString()}
+                    {entry.games_played} game{entry.games_played !== 1 ? 's' : ''} played
                   </p>
                 </div>
                 <span className="text-lg font-black text-secondary">
