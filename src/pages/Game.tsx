@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase, Video } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
-import GameMap from '@/components/GameMap';
-import GameMapErrorBoundary from '@/components/GameMapErrorBoundary';
-import VideoPlayer from '@/components/VideoPlayer';
-import ScoreDisplay from '@/components/ScoreDisplay';
-import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, MapPin, Trophy, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from "react";
+import { supabase, Video } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import GameMap from "@/components/GameMap";
+import GameMapErrorBoundary from "@/components/GameMapErrorBoundary";
+import VideoPlayer from "@/components/VideoPlayer";
+import ScoreDisplay from "@/components/ScoreDisplay";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const TOTAL_ROUNDS = 5;
 const MAX_SCORE_PER_ROUND = 5000;
@@ -19,8 +19,7 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -45,12 +44,9 @@ export default function Game() {
   useEffect(() => {
     async function fetchVideos() {
       setLoading(true);
-      console.log('[PORNOGUESSR] Fetching videos from Supabase...');
-      const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .limit(50);
-      console.log('[PORNOGUESSR] Result:', { data, error });
+      console.log("[PORNOGUESSR] Fetching videos from Supabase...");
+      const { data, error } = await supabase.from("videos").select("*").limit(50);
+      console.log("[PORNOGUESSR] Result:", { data, error });
 
       if (error) {
         setError(`Failed to load videos: ${error.message}`);
@@ -59,7 +55,7 @@ export default function Game() {
       }
 
       if (!data || data.length === 0) {
-        setError('No videos found in the database.');
+        setError("No videos found in the database.");
         setLoading(false);
         return;
       }
@@ -74,39 +70,42 @@ export default function Game() {
 
   const currentVideo = videos[currentRound];
 
-  const handleGuess = useCallback((lat: number, lng: number) => {
-    if (roundResult) return;
-    setGuessMarker([lat, lng]);
-  }, [roundResult]);
+  const handleGuess = useCallback(
+    (lat: number, lng: number) => {
+      if (roundResult) return;
+      setGuessMarker([lat, lng]);
+    },
+    [roundResult],
+  );
 
   const handleSubmitGuess = () => {
     if (!guessMarker || !currentVideo) return;
 
-    const distance = haversineDistance(
-      guessMarker[0], guessMarker[1],
-      currentVideo.latitude, currentVideo.longitude
-    );
+    const distance = haversineDistance(guessMarker[0], guessMarker[1], currentVideo.latitude, currentVideo.longitude);
     const score = calculateScore(distance);
 
     setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
     setRoundResult({ distance, score });
-    setTotalScore(prev => prev + score);
+    setTotalScore((prev) => prev + score);
   };
 
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
       setGameOver(true);
       if (user) {
-        supabase.from('game_scores').insert({
-          user_id: user.id,
-          total_score: totalScore,
-        }).then(({ error }) => {
-          if (error) console.error('[PORNOGUESSR] Failed to save score:', error);
-        });
+        supabase
+          .from("game_scores")
+          .insert({
+            user_id: user.id,
+            total_score: totalScore,
+          })
+          .then(({ error }) => {
+            if (error) console.error("[PORNOGUESSR] Failed to save score:", error);
+          });
       }
       return;
     }
-    setCurrentRound(prev => prev + 1);
+    setCurrentRound((prev) => prev + 1);
     setGuessMarker(null);
     setAnswerMarker(null);
     setRoundResult(null);
@@ -115,10 +114,7 @@ export default function Game() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-        >
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
           <Loader2 className="w-12 h-12 text-primary" />
         </motion.div>
       </div>
@@ -130,7 +126,9 @@ export default function Game() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="bg-card border border-border rounded-lg p-8 text-center max-w-md space-y-4">
           <p className="text-destructive text-lg font-bold">⚠️ {error}</p>
-          <Button onClick={() => navigate('/')} variant="outline">Back to Home</Button>
+          <Button onClick={() => navigate("/")} variant="outline">
+            Back to Home
+          </Button>
         </div>
       </div>
     );
@@ -143,7 +141,7 @@ export default function Game() {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 150 }}
+          transition={{ type: "spring", stiffness: 150 }}
           className="bg-card border-2 border-primary rounded-lg p-8 text-center max-w-md space-y-6"
         >
           <Trophy className="w-16 h-16 text-secondary mx-auto" />
@@ -151,13 +149,17 @@ export default function Game() {
           <div className="text-5xl font-black text-foreground">{totalScore.toLocaleString()}</div>
           <p className="text-muted-foreground">Total score across {TOTAL_ROUNDS} rounds</p>
           <p className="text-secondary font-bold">
-            {avgScore >= 4000 ? '🔥 You\'re a legend!' : avgScore >= 2000 ? '😏 Not bad at all!' : '💀 Better luck next time!'}
+            {avgScore >= 4000
+              ? "🔥 You're a legend!"
+              : avgScore >= 2000
+                ? "😏 Not bad at all!"
+                : "💀 Better luck next time!"}
           </p>
           <div className="flex gap-3 justify-center">
             <Button onClick={() => window.location.reload()} className="bg-gradient-hot font-bold">
               Play Again
             </Button>
-            <Button onClick={() => navigate('/')} variant="outline">
+            <Button onClick={() => navigate("/")} variant="outline">
               Home
             </Button>
           </div>
@@ -169,8 +171,8 @@ export default function Game() {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border px-4 py-3 flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="text-xl font-black text-gradient-hot tracking-tight">
-          PORNOGUESSR
+        <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
+          GEOGUSHING
         </button>
         <div className="flex items-center gap-4">
           <span className="text-muted-foreground font-bold text-sm">
@@ -223,7 +225,7 @@ export default function Game() {
                 onClick={handleNextRound}
                 className="flex-1 bg-secondary text-secondary-foreground font-black text-lg h-12"
               >
-                {currentRound + 1 >= TOTAL_ROUNDS ? 'SEE RESULTS' : 'NEXT ROUND'}
+                {currentRound + 1 >= TOTAL_ROUNDS ? "SEE RESULTS" : "NEXT ROUND"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             )}
