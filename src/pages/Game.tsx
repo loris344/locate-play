@@ -115,7 +115,12 @@ export default function Game() {
     setRoundResult(null);
   };
 
-  if (loading) {
+  // Access control check
+  if (!gameAccess.loading && !gameAccess.canPlay) {
+    return <StripePaywall reason={gameAccess.reason} />;
+  }
+
+  if (loading || gameAccess.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
