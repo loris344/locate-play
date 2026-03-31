@@ -44,9 +44,9 @@ export default function Game() {
   useEffect(() => {
     async function fetchVideos() {
       setLoading(true);
-      console.log("[STARFOULA] Fetching videos from Supabase...");
+      console.log("[GEOGUSHING] Fetching videos from Supabase...");
       const { data, error } = await supabase.from("videos").select("*").limit(50);
-      console.log("[STARFOULA] Result:", { data, error });
+      console.log("[GEOGUSHING] Result:", { data, error });
 
       if (error) {
         setError(`Failed to load videos: ${error.message}`);
@@ -100,7 +100,7 @@ export default function Game() {
             total_score: totalScore,
           })
           .then(({ error }) => {
-            if (error) console.error("[STARFOULA] Failed to save score:", error);
+            if (error) console.error("[GEOGUSHING] Failed to save score:", error);
           });
       }
       return;
@@ -172,7 +172,7 @@ export default function Game() {
     <div className="min-h-screen bg-background">
       <div className="border-b border-border px-4 py-3 flex items-center justify-between">
         <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
-          STARFOULA
+          GEOGUSHING
         </button>
         <div className="flex items-center gap-4">
           <span className="text-muted-foreground font-bold text-sm">

@@ -63,7 +63,7 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black text-gradient-hot">STARFOULA</h1>
+          <h1 className="text-4xl font-black text-gradient-hot">GEOGUSHING</h1>
           <p className="text-muted-foreground text-sm">{isLogin ? "Welcome back" : "Create your account"}</p>
         </div>
 
