@@ -31,7 +31,9 @@ export default function Auth() {
     if (user) {
       navigate(getRedirect(), { replace: true });
     }
-  }, [user]);
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
