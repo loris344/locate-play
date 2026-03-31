@@ -236,7 +236,8 @@ export default function Game() {
         </button>
         <div className="flex items-center gap-3">
           <RoundTimer
-            isActive={timerActive}
+            roundId={currentRound}
+            stopped={!!roundResult}
             onTimeUp={handleTimeUp}
             onElapsedChange={(e) => { elapsedRef.current = e; }}
           />
