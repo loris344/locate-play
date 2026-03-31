@@ -95,6 +95,7 @@ export default function Game() {
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
       setGameOver(true);
+      gameAccess.recordGamePlayed();
       if (user) {
         supabase
           .from("game_scores")
