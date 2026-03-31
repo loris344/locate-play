@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, Video } from '@/lib/supabase';
 import GameMap from '@/components/GameMap';
+import GameMapErrorBoundary from '@/components/GameMapErrorBoundary';
 import VideoPlayer from '@/components/VideoPlayer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,6 @@ export default function Game() {
         return;
       }
 
-      // Shuffle and pick TOTAL_ROUNDS
       const shuffled = data.sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
       setVideos(shuffled as Video[]);
       setLoading(false);
@@ -158,7 +158,6 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar */}
       <div className="border-b border-border px-4 py-3 flex items-center justify-between">
         <button onClick={() => navigate('/')} className="text-xl font-black text-gradient-hot tracking-tight">
           PORNOGUESSR
@@ -171,9 +170,7 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Game layout */}
       <div className="grid lg:grid-cols-2 gap-4 p-4 h-[calc(100vh-57px)]">
-        {/* Left: Video */}
         <div className="flex flex-col gap-4">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
 
@@ -189,15 +186,16 @@ export default function Game() {
           </AnimatePresence>
         </div>
 
-        {/* Right: Map + controls */}
         <div className="flex flex-col gap-4 min-h-0">
           <div className="flex-1 min-h-[300px]">
-            <GameMap
-              onGuess={handleGuess}
-              guessMarker={guessMarker}
-              answerMarker={answerMarker}
-              disabled={!!roundResult}
-            />
+            <GameMapErrorBoundary>
+              <GameMap
+                onGuess={handleGuess}
+                guessMarker={guessMarker}
+                answerMarker={answerMarker}
+                disabled={!!roundResult}
+              />
+            </GameMapErrorBoundary>
           </div>
 
           <div className="flex gap-3">
