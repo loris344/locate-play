@@ -24,8 +24,8 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 function calculateScore(distance: number): number {
-  if (distance < 50) return MAX_SCORE_PER_ROUND;
-  return Math.max(0, Math.round(MAX_SCORE_PER_ROUND * Math.exp(-distance / 2000)));
+  if (distance < 25) return MAX_SCORE_PER_ROUND;
+  return Math.max(0, Math.round(MAX_SCORE_PER_ROUND * Math.exp(-distance / 500)));
 }
 
 export default function Game() {
