@@ -33,7 +33,8 @@ export default function Auth() {
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        navigate("/");
+        const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
+        navigate(redirectTo);
       }
     } else {
       const { error } = await supabase.auth.signUp({
