@@ -94,13 +94,28 @@ export default function Game() {
   const handleSubmitGuess = () => {
     if (!guessMarker || !currentVideo) return;
 
+    setTimerActive(false);
     const distance = haversineDistance(guessMarker[0], guessMarker[1], currentVideo.latitude, currentVideo.longitude);
-    const score = calculateScore(distance);
+    const baseScore = calculateScore(distance);
+    const timeMultiplier = getTimeMultiplier(elapsedRef.current);
+    const score = Math.round(baseScore * timeMultiplier);
 
     setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
-    setRoundResult({ distance, score });
+    setRoundResult({ distance, score, timeMultiplier, baseScore });
     setTotalScore((prev) => prev + score);
   };
+
+  const handleTimeUp = useCallback(() => {
+    if (!currentVideo || roundResult) return;
+    setTimerActive(false);
+    const guessLat = guessMarker?.[0] ?? 0;
+    const guessLng = guessMarker?.[1] ?? 0;
+    const distance = guessMarker
+      ? haversineDistance(guessLat, guessLng, currentVideo.latitude, currentVideo.longitude)
+      : 20000;
+    setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
+    setRoundResult({ distance, score: 0, timeMultiplier: 0, baseScore: 0 });
+  }, [currentVideo, guessMarker, roundResult]);
 
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
