@@ -2,9 +2,37 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StripePricingTable from '@/components/StripePricingTable';
+import { useState, useEffect } from 'react';
+import lorisImg from '@/assets/loris.png';
+
+function ResetCountdown() {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    function calc() {
+      const now = new Date();
+      const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+      const diff = tomorrow.getTime() - now.getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${h}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`);
+    }
+    calc();
+    const interval = setInterval(calc, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Clock className="w-4 h-4" />
+      <span>New free games in <span className="font-bold text-foreground">{timeLeft}</span></span>
+    </div>
+  );
+}
 
 export default function Subscription() {
   const navigate = useNavigate();
@@ -74,6 +102,7 @@ export default function Subscription() {
               </p>
             </div>
           </div>
+          {!isSubscribed && gamesPlayedToday >= 2 && <ResetCountdown />}
         </motion.div>
 
         {/* Pricing table if not subscribed */}
@@ -94,6 +123,20 @@ export default function Subscription() {
         <p className="text-xs text-muted-foreground text-center">
           {user.email}
         </p>
+
+        {/* Contact discret */}
+        <div className="pt-4 border-t border-border">
+          <a
+            href="https://instagram.com/loris_dtg"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors mx-auto w-fit"
+          >
+            <img src={lorisImg} alt="Loris" className="w-8 h-8 rounded-full object-cover" />
+            <span className="text-xs">Questions? DM <span className="font-medium">@loris_dtg</span></span>
+            <Instagram className="w-4 h-4" />
+          </a>
+        </div>
       </div>
     </div>
   );
