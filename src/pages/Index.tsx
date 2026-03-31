@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MapPin, Play, Globe, Trophy, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 
 export default function Index() {
   const navigate = useNavigate();
