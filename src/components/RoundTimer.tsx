@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Timer } from "lucide-react";
 
-const ROUND_TIME = 60; // seconds
+const ROUND_TIME = 120; // seconds
 
 interface RoundTimerProps {
   isActive: boolean;
