@@ -42,10 +42,12 @@ export default function Game() {
   useEffect(() => {
     async function fetchVideos() {
       setLoading(true);
+      console.log('[PORNOGUESSR] Fetching videos from Supabase...');
       const { data, error } = await supabase
         .from('videos')
         .select('*')
         .limit(50);
+      console.log('[PORNOGUESSR] Result:', { data, error });
 
       if (error) {
         setError(`Failed to load videos: ${error.message}`);
