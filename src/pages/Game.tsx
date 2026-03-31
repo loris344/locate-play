@@ -145,24 +145,7 @@ export default function Game() {
 
   if (gameOver) {
     const avgScore = Math.round(totalScore / TOTAL_ROUNDS);
-
-    // Check if user can play another game
     const canPlayNext = gameAccess.canPlay;
-    const nextAction = () => {
-      if (!canPlayNext) {
-        if (!user) {
-          navigate("/auth?redirect=/game");
-        } else {
-          // Show paywall inline — don't reload
-        }
-      } else {
-        window.location.reload();
-      }
-    };
-
-    if (!canPlayNext && user) {
-      return <StripePaywall reason="paywall" />;
-    }
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -170,7 +153,7 @@ export default function Game() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 150 }}
-          className="bg-card border-2 border-primary rounded-lg p-8 text-center max-w-md space-y-6"
+          className="bg-card border-2 border-primary rounded-lg p-8 text-center max-w-lg w-full space-y-6 max-h-[90vh] overflow-y-auto"
         >
           <Trophy className="w-16 h-16 text-secondary mx-auto" />
           <h2 className="text-4xl font-black text-gradient-hot">GAME OVER</h2>
@@ -183,14 +166,45 @@ export default function Game() {
                 ? "😏 Not bad at all!"
                 : "💀 Better luck next time!"}
           </p>
-          <div className="flex gap-3 justify-center">
-            <Button onClick={nextAction} className="bg-gradient-hot font-bold">
-              {canPlayNext ? "Next party" : "S'inscrire pour continuer"}
-            </Button>
-            <Button onClick={() => navigate("/")} variant="outline">
-              Home
-            </Button>
-          </div>
+
+          {canPlayNext ? (
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => window.location.reload()} className="bg-gradient-hot font-bold">
+                Next Party
+              </Button>
+              <Button onClick={() => navigate("/")} variant="outline">
+                Home
+              </Button>
+            </div>
+          ) : !user ? (
+            <div className="space-y-4">
+              <p className="text-muted-foreground">You've used your free game! Sign up to keep playing (2 free games per day).</p>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => navigate("/auth?redirect=/game")} className="bg-gradient-hot font-bold">
+                  Sign Up
+                </Button>
+                <Button onClick={() => navigate("/")} variant="outline">
+                  Home
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="font-bold text-primary">No games left today. Choose a plan to keep playing!</p>
+              <div className="w-full" dangerouslySetInnerHTML={{
+                __html: `
+                  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+                  <stripe-pricing-table
+                    pricing-table-id="prctbl_1TH1mMGxRwR5OjMT5TlwsDZf"
+                    publishable-key="pk_test_51TH15hGxRwR5OjMTKbMwEepA3ww5XKmUSimKNa8jWhoy35Zv2GzZ0914oSpKPpwASrksruRs98cMlewLTCLKLgRB00UgIEaiaJ">
+                  </stripe-pricing-table>
+                `
+              }} />
+              <Button onClick={() => navigate("/")} variant="outline">
+                Home
+              </Button>
+            </div>
+          )}
         </motion.div>
       </div>
     );
