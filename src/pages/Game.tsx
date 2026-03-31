@@ -230,11 +230,16 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+      <div className="border-b border-border px-4 py-2 flex items-center justify-between">
         <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
           GEOGUSHING
         </button>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <RoundTimer
+            isActive={timerActive}
+            onTimeUp={handleTimeUp}
+            onElapsedChange={(e) => { elapsedRef.current = e; }}
+          />
           <span className="text-muted-foreground font-bold text-sm">
             Round <span className="text-foreground">{currentRound + 1}</span>/{TOTAL_ROUNDS}
           </span>
