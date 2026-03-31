@@ -120,7 +120,7 @@ export default function Game() {
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
       setGameOver(true);
-      gameAccess.recordGamePlayed();
+
       if (user) {
         supabase
           .from("game_scores")
@@ -129,8 +129,14 @@ export default function Game() {
             total_score: totalScore,
           })
           .then(({ error }) => {
-            if (error) console.error("[GEOGUSHING] Failed to save score:", error);
+            if (error) {
+              console.error("[GEOGUSHING] Failed to save score:", error);
+            } else {
+              gameAccess.recordGamePlayed();
+            }
           });
+      } else {
+        gameAccess.recordGamePlayed();
       }
       return;
     }

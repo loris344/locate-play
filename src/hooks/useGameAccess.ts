@@ -33,6 +33,13 @@ function incrementAnonGames() {
   localStorage.setItem(ANON_GAME_KEY, JSON.stringify({ count: current + 1, date: today }));
 }
 
+function getUtcDayRange() {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+  return { startIso: start.toISOString(), endIso: end.toISOString() };
+}
+
 export function useGameAccess(): GameAccess {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -44,42 +51,70 @@ export function useGameAccess(): GameAccess {
       if (!user) {
         const anonCount = getAnonGamesPlayed();
         setGamesPlayedToday(anonCount);
+        setIsSubscribed(false);
         setLoading(false);
         return;
       }
 
       // Check subscription
-      const { data: sub } = await supabase
+      const { data: sub, error: subError } = await supabase
         .from('subscriptions')
         .select('status, expires_at')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (sub && sub.status === 'active') {
-        const notExpired = !sub.expires_at || new Date(sub.expires_at) > new Date();
-        setIsSubscribed(notExpired);
-        if (notExpired) {
-          setLoading(false);
-          return;
-        }
+      if (subError) {
+        console.error('[GEOGUSHING] Subscription check failed:', subError);
       }
 
-      // Count today's games (use UTC to avoid timezone issues)
-      const now = new Date();
-      const todayUTC = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}T00:00:00.000Z`;
+      const subscribed = !!(
+        sub &&
+        sub.status === 'active' &&
+        (!sub.expires_at || new Date(sub.expires_at) > new Date())
+      );
 
-      const { count } = await supabase
+      setIsSubscribed(subscribed);
+      if (subscribed) {
+        setGamesPlayedToday(0);
+        setLoading(false);
+        return;
+      }
+
+      // Count today's games in UTC (hard limit source of truth)
+      const { startIso, endIso } = getUtcDayRange();
+
+      let { count, error } = await supabase
         .from('game_scores')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .gte('played_at', todayUTC);
+        .gte('created_at', startIso)
+        .lte('created_at', endIso);
 
-      setGamesPlayedToday(count || 0);
+      // Fallback for schemas using played_at instead of created_at
+      if (error) {
+        const fallback = await supabase
+          .from('game_scores')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('played_at', startIso)
+          .lte('played_at', endIso);
+        count = fallback.count;
+        error = fallback.error;
+      }
+
+      if (error) {
+        console.error('[GEOGUSHING] Daily games count failed:', error);
+        // Fail closed: if counting fails, do not allow extra free games
+        setGamesPlayedToday(MAX_DAILY_GAMES);
+      } else {
+        setGamesPlayedToday(count || 0);
+      }
+
       setLoading(false);
     }
 
     check();
-  }, [user]);
+  }, [user?.id]);
 
   const canPlay = (() => {
     if (loading) return true;
