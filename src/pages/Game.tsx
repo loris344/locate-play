@@ -117,7 +117,7 @@ export default function Game() {
 
   // Access control check
   if (!gameAccess.loading && !gameAccess.canPlay) {
-    return <StripePaywall reason={gameAccess.reason} />;
+    return <StripePaywall reason={gameAccess.reason as 'signin_required' | 'paywall'} />;
   }
 
   if (loading || gameAccess.loading) {
