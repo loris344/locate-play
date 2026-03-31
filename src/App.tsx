@@ -20,17 +20,16 @@ function GlobalNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Don't show on home (already has its own nav) or on subscription page
-  if (!user || location.pathname === '/' || location.pathname === '/subscription') return null;
+  if (location.pathname === '/subscription') return null;
 
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={() => navigate('/subscription')}
-      className="fixed top-3 right-3 z-50 font-bold"
+      onClick={() => navigate(user ? '/subscription' : '/auth?redirect=/subscription')}
+      className="fixed bottom-4 right-4 z-50 font-bold shadow-glow"
     >
-      <Crown className="h-4 w-4 mr-1" /> My Plan
+      <Crown className="h-4 w-4 mr-1" /> {user ? 'My Plan' : 'Plans'}
     </Button>
   );
 }

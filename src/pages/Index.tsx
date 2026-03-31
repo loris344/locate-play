@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 
@@ -15,9 +15,6 @@ export default function Index() {
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
         {user ? (
           <>
-            <Button variant="outline" size="sm" onClick={() => navigate('/subscription')}>
-              <Crown className="h-4 w-4 mr-1" /> My Plan
-            </Button>
             <span className="text-sm text-muted-foreground">{user.user_metadata?.username || user.email}</span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
