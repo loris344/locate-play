@@ -45,7 +45,15 @@ export default function Game() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const elapsedRef = useRef(0);
+  const [timerActive, setTimerActive] = useState(false);
 
+  // Start timer when videos load
+  useEffect(() => {
+    if (videos.length > 0 && !gameOver) {
+      setTimerActive(true);
+    }
+  }, [videos, currentRound, gameOver]);
   useEffect(() => {
     async function fetchVideos() {
       setLoading(true);
