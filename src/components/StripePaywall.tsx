@@ -24,7 +24,7 @@ export default function StripePaywall({ reason }: StripePaywallProps) {
             Tu as joué ta partie gratuite ! Connecte-toi pour continuer à jouer (2 parties gratuites par jour).
           </p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => navigate('/auth')} className="bg-gradient-hot font-black text-lg px-8 py-3 h-auto">
+            <Button onClick={() => navigate('/auth?redirect=/game')} className="bg-gradient-hot font-black text-lg px-8 py-3 h-auto">
               <LogIn className="mr-2 h-5 w-5" />
               S'INSCRIRE
             </Button>

@@ -19,7 +19,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
 
   if (user) {
-    navigate("/");
+    const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
+    navigate(redirectTo);
     return null;
   }
 
@@ -32,7 +33,8 @@ export default function Auth() {
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        navigate("/");
+        const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
+        navigate(redirectTo);
       }
     } else {
       const { error } = await supabase.auth.signUp({
@@ -52,7 +54,7 @@ export default function Auth() {
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.origin + (new URLSearchParams(window.location.search).get('redirect') || '/') },
     });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });

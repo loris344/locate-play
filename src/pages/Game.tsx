@@ -115,8 +115,8 @@ export default function Game() {
     setRoundResult(null);
   };
 
-  // Access control check
-  if (!gameAccess.loading && !gameAccess.canPlay) {
+  // Access control check — only block BEFORE a game starts, not during/after
+  if (!gameAccess.loading && !gameAccess.canPlay && !gameOver && videos.length === 0) {
     return <StripePaywall reason={gameAccess.reason as 'signin_required' | 'paywall'} />;
   }
 
@@ -191,8 +191,8 @@ export default function Game() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4 p-4 h-[calc(100vh-57px)]">
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-2 p-2 lg:gap-4 lg:p-4 h-[calc(100vh-57px)] overflow-hidden">
+        <div className="flex flex-col gap-2 lg:gap-4 min-h-0 flex-1 lg:flex-auto">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
 
           <AnimatePresence>
@@ -207,8 +207,8 @@ export default function Game() {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col gap-4 min-h-0">
-          <div className="flex-1 min-h-[300px]">
+        <div className="flex flex-col gap-2 lg:gap-4 min-h-0 flex-1 lg:flex-auto">
+          <div className="flex-1 min-h-[150px] lg:min-h-[300px]">
             <GameMapErrorBoundary>
               <GameMap
                 onGuess={handleGuess}
@@ -219,7 +219,7 @@ export default function Game() {
             </GameMapErrorBoundary>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 shrink-0 pb-2 lg:pb-0">
             {!roundResult ? (
               <Button
                 onClick={handleSubmitGuess}
