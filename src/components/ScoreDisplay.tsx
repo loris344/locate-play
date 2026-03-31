@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { getTimeLabel } from './RoundTimer';
 
 interface ScoreDisplayProps {
   distance: number;
   score: number;
   city: string;
   country: string;
+  timeMultiplier?: number;
+  baseScore?: number;
 }
 
-export default function ScoreDisplay({ distance, score, city, country }: ScoreDisplayProps) {
+export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore }: ScoreDisplayProps) {
   const [dismissed, setDismissed] = useState(false);
 
   const getEmoji = (score: number) => {
@@ -30,6 +33,14 @@ export default function ScoreDisplay({ distance, score, city, country }: ScoreDi
 
   if (dismissed) return null;
 
+  const timeLabel = timeMultiplier !== undefined ? getTimeLabel(timeMultiplier) : '';
+  const multiplierColor =
+    timeMultiplier !== undefined && timeMultiplier >= 1.2
+      ? 'text-green-400'
+      : timeMultiplier !== undefined && timeMultiplier < 1
+        ? 'text-red-400'
+        : 'text-muted-foreground';
+
   return (
     <AnimatePresence>
       <motion.div
@@ -37,17 +48,22 @@ export default function ScoreDisplay({ distance, score, city, country }: ScoreDi
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        className="bg-card border-2 border-primary rounded-lg p-4 text-center space-y-2 relative"
+        className="bg-card border-2 border-primary rounded-lg p-4 text-center space-y-1 relative"
       >
         <button
           onClick={() => setDismissed(true)}
           className="absolute top-2 right-2 bg-muted hover:bg-muted-foreground/20 rounded-full p-1.5 transition-colors"
-          aria-label="Fermer"
+          aria-label="Close"
         >
           <X className="w-5 h-5 text-foreground" />
         </button>
         <div className="text-3xl">{getEmoji(score)}</div>
         <div className="text-2xl font-black text-gradient-hot">{score.toLocaleString()} pts</div>
+        {timeMultiplier !== undefined && timeMultiplier !== 1 && (
+          <p className={`text-xs font-bold ${multiplierColor}`}>
+            {baseScore?.toLocaleString()} × {timeMultiplier}x {timeLabel}
+          </p>
+        )}
         <p className="text-sm font-bold text-foreground">{getMessage(score)}</p>
         <p className="text-xs text-muted-foreground">
           {Math.round(distance)} km from <span className="text-secondary font-bold">{city}, {country}</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, Video } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameAccess } from "@/hooks/useGameAccess";
@@ -8,6 +8,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import ScoreDisplay from "@/components/ScoreDisplay";
 import StripePaywall from "@/components/StripePaywall";
 import StripePricingTable from "@/components/StripePricingTable";
+import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundTimer";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
@@ -40,11 +41,19 @@ export default function Game() {
   const [totalScore, setTotalScore] = useState(0);
   const [guessMarker, setGuessMarker] = useState<[number, number] | null>(null);
   const [answerMarker, setAnswerMarker] = useState<[number, number] | null>(null);
-  const [roundResult, setRoundResult] = useState<{ distance: number; score: number } | null>(null);
+  const [roundResult, setRoundResult] = useState<{ distance: number; score: number; timeMultiplier: number; baseScore: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const elapsedRef = useRef(0);
+  const [timerActive, setTimerActive] = useState(false);
 
+  // Start timer when videos load
+  useEffect(() => {
+    if (videos.length > 0 && !gameOver) {
+      setTimerActive(true);
+    }
+  }, [videos, currentRound, gameOver]);
   useEffect(() => {
     async function fetchVideos() {
       setLoading(true);
@@ -85,13 +94,28 @@ export default function Game() {
   const handleSubmitGuess = () => {
     if (!guessMarker || !currentVideo) return;
 
+    setTimerActive(false);
     const distance = haversineDistance(guessMarker[0], guessMarker[1], currentVideo.latitude, currentVideo.longitude);
-    const score = calculateScore(distance);
+    const baseScore = calculateScore(distance);
+    const timeMultiplier = getTimeMultiplier(elapsedRef.current);
+    const score = Math.round(baseScore * timeMultiplier);
 
     setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
-    setRoundResult({ distance, score });
+    setRoundResult({ distance, score, timeMultiplier, baseScore });
     setTotalScore((prev) => prev + score);
   };
+
+  const handleTimeUp = useCallback(() => {
+    if (!currentVideo || roundResult) return;
+    setTimerActive(false);
+    const guessLat = guessMarker?.[0] ?? 0;
+    const guessLng = guessMarker?.[1] ?? 0;
+    const distance = guessMarker
+      ? haversineDistance(guessLat, guessLng, currentVideo.latitude, currentVideo.longitude)
+      : 20000;
+    setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
+    setRoundResult({ distance, score: 0, timeMultiplier: 0, baseScore: 0 });
+  }, [currentVideo, guessMarker, roundResult]);
 
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
@@ -114,6 +138,7 @@ export default function Game() {
     setGuessMarker(null);
     setAnswerMarker(null);
     setRoundResult(null);
+    elapsedRef.current = 0;
   };
 
   // Access control check — only block BEFORE a game starts, not during/after
@@ -205,11 +230,16 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+      <div className="border-b border-border px-4 py-2 flex items-center justify-between">
         <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
           GEOGUSHING
         </button>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <RoundTimer
+            isActive={timerActive}
+            onTimeUp={handleTimeUp}
+            onElapsedChange={(e) => { elapsedRef.current = e; }}
+          />
           <span className="text-muted-foreground font-bold text-sm">
             Round <span className="text-foreground">{currentRound + 1}</span>/{TOTAL_ROUNDS}
           </span>
@@ -228,6 +258,8 @@ export default function Game() {
                 score={roundResult.score}
                 city={currentVideo.city}
                 country={currentVideo.country}
+                timeMultiplier={roundResult.timeMultiplier}
+                baseScore={roundResult.baseScore}
               />
             )}
           </AnimatePresence>
