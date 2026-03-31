@@ -145,6 +145,25 @@ export default function Game() {
 
   if (gameOver) {
     const avgScore = Math.round(totalScore / TOTAL_ROUNDS);
+
+    // Check if user can play another game
+    const canPlayNext = gameAccess.canPlay;
+    const nextAction = () => {
+      if (!canPlayNext) {
+        if (!user) {
+          navigate("/auth?redirect=/game");
+        } else {
+          // Show paywall inline — don't reload
+        }
+      } else {
+        window.location.reload();
+      }
+    };
+
+    if (!canPlayNext && user) {
+      return <StripePaywall reason="paywall" />;
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <motion.div
@@ -165,8 +184,8 @@ export default function Game() {
                 : "💀 Better luck next time!"}
           </p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => window.location.reload()} className="bg-gradient-hot font-bold">
-              Play Again
+            <Button onClick={nextAction} className="bg-gradient-hot font-bold">
+              {canPlayNext ? "Next party" : "S'inscrire pour continuer"}
             </Button>
             <Button onClick={() => navigate("/")} variant="outline">
               Home
