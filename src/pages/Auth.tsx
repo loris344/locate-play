@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,10 +27,13 @@ export default function Auth() {
     return params.get('redirect') || '/';
   };
 
-  if (user) {
-    navigate(getRedirect());
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate(getRedirect(), { replace: true });
+    }
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
