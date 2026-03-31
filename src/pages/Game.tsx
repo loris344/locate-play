@@ -115,8 +115,8 @@ export default function Game() {
     setRoundResult(null);
   };
 
-  // Access control check
-  if (!gameAccess.loading && !gameAccess.canPlay) {
+  // Access control check — only block BEFORE a game starts, not during/after
+  if (!gameAccess.loading && !gameAccess.canPlay && !gameOver && videos.length === 0) {
     return <StripePaywall reason={gameAccess.reason as 'signin_required' | 'paywall'} />;
   }
 
