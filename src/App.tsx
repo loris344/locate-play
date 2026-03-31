@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Route, Routes, useNavigate, useLocation } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Crown } from "lucide-react";
+import { Crown, Loader2 } from "lucide-react";
 import Index from "./pages/Index.tsx";
 import Game from "./pages/Game.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -12,8 +12,27 @@ import Auth from "./pages/Auth.tsx";
 import Leaderboard from "./pages/Leaderboard.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.tsx";
+import { useGameAccess } from "./hooks/useGameAccess";
 
 const queryClient = new QueryClient();
+
+function GameRoute() {
+  const gameAccess = useGameAccess();
+
+  if (gameAccess.loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!gameAccess.canPlay) {
+    return <Navigate to={gameAccess.reason === "paywall" ? "/subscription" : "/auth?redirect=/game"} replace />;
+  }
+
+  return <Game />;
+}
 
 function GlobalNav() {
   const { user } = useAuth();
@@ -45,10 +64,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/game" element={<Game />} />
+            <Route path="/game" element={<GameRoute />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/subscription" element={<Subscription />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>

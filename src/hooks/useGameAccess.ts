@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ANON_GAME_KEY = 'geogushing_anon_games';
+const USER_GAME_KEY_PREFIX = 'geogushing_user_games_';
 const MAX_ANON_GAMES = 1;
 const MAX_DAILY_GAMES = 2;
 
@@ -27,10 +28,30 @@ function getAnonGamesPlayed(): number {
   }
 }
 
+function getUserGamesPlayed(userId: string): number {
+  const key = `${USER_GAME_KEY_PREFIX}${userId}`;
+  const stored = localStorage.getItem(key);
+  if (!stored) return 0;
+  try {
+    const { count, date } = JSON.parse(stored);
+    if (date !== new Date().toISOString().split('T')[0]) return 0;
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
 function incrementAnonGames() {
   const today = new Date().toISOString().split('T')[0];
   const current = getAnonGamesPlayed();
   localStorage.setItem(ANON_GAME_KEY, JSON.stringify({ count: current + 1, date: today }));
+}
+
+function incrementUserGames(userId: string) {
+  const today = new Date().toISOString().split('T')[0];
+  const key = `${USER_GAME_KEY_PREFIX}${userId}`;
+  const current = getUserGamesPlayed(userId);
+  localStorage.setItem(key, JSON.stringify({ count: current + 1, date: today }));
 }
 
 function getUtcDayRange() {
