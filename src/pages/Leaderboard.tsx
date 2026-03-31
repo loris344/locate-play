@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 interface LeaderboardEntry {
   username: string;
   total_score: number;
-  played_at: string;
+  games_played: number;
+  last_played_at: string;
 }
 
 export default function Leaderboard() {
@@ -18,20 +19,10 @@ export default function Leaderboard() {
 
   useEffect(() => {
     async function fetchScores() {
-      const { data } = await supabase
-        .from('game_scores')
-        .select('total_score, played_at, profiles(username)')
-        .order('total_score', { ascending: false })
-        .limit(50);
+      const { data } = await supabase.rpc('get_leaderboard');
 
       if (data) {
-        setEntries(
-          data.map((d: any) => ({
-            username: d.profiles?.username || 'Anonymous',
-            total_score: d.total_score,
-            played_at: d.played_at,
-          }))
-        );
+        setEntries(data as LeaderboardEntry[]);
       }
       setLoading(false);
     }
