@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MapPin, Play, Globe, Trophy, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -26,11 +27,8 @@ export default function Index() {
         )}
       </div>
 
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-64 h-64 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-64 h-64 rounded-full bg-secondary/10 blur-3xl" />
-      </div>
+      {/* Photo mosaic background */}
+      <InfinitePhotoMosaic />
 
       <motion.div
         initial={{ y: -50, opacity: 0 }}
