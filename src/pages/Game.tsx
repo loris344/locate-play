@@ -7,6 +7,7 @@ import GameMapErrorBoundary from "@/components/GameMapErrorBoundary";
 import VideoPlayer from "@/components/VideoPlayer";
 import ScoreDisplay from "@/components/ScoreDisplay";
 import StripePaywall from "@/components/StripePaywall";
+import StripePricingTable from "@/components/StripePricingTable";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
