@@ -6,29 +6,54 @@ interface VideoPlayerProps {
 
 const DIRECT_VIDEO_PATTERN = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i;
 
+function getYouTubeEmbedUrl(input: string) {
+  const match = input
+    .trim()
+    .match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/i);
+
+  return match ? `https://www.youtube.com/embed/${match[1]}` : '';
+}
+
 function getSourceInfo(url: string) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, '');
     const isDirectVideo = DIRECT_VIDEO_PATTERN.test(url);
+    const youTubeEmbedUrl = getYouTubeEmbedUrl(url);
+    const isYouTube = Boolean(youTubeEmbedUrl);
     const isKnownEmbed =
       (host === 'xnxx.com' && parsed.pathname.includes('/embedframe/')) ||
       (host === 'pornhub.com' && parsed.pathname.includes('/embed/'));
 
-    return { host, isDirectVideo, isKnownEmbed };
+    return { host, isDirectVideo, isKnownEmbed, isYouTube, youTubeEmbedUrl };
   } catch {
-    return { host: 'unknown source', isDirectVideo: false, isKnownEmbed: false };
+    return {
+      host: 'unknown source',
+      isDirectVideo: false,
+      isKnownEmbed: false,
+      isYouTube: false,
+      youTubeEmbedUrl: '',
+    };
   }
 }
 
 export default function VideoPlayer({ url }: VideoPlayerProps) {
   const [videoFailed, setVideoFailed] = useState(false);
-  const { host, isDirectVideo, isKnownEmbed } = useMemo(() => getSourceInfo(url), [url]);
+  const { host, isDirectVideo, isKnownEmbed, isYouTube, youTubeEmbedUrl } = useMemo(() => getSourceInfo(url), [url]);
 
   return (
     <div className="overflow-hidden rounded-lg border-2 border-border bg-card shadow-neon">
       <div className="aspect-video w-full bg-muted">
-        {isDirectVideo && !videoFailed ? (
+        {isYouTube ? (
+          <iframe
+            src={youTubeEmbedUrl}
+            title="Video preview"
+            className="h-full w-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        ) : isDirectVideo && !videoFailed ? (
           <video
             src={url}
             controls
@@ -47,6 +72,8 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
               <p className="text-sm text-muted-foreground">
                 {isKnownEmbed
                   ? `This ${host} embed URL is being returned by Supabase, but many adult sites block reliable in-app playback.`
+                  : isYouTube
+                    ? 'This YouTube URL could not be normalized into a valid embed link.'
                   : 'This row does not contain a direct video file that the browser can play inline.'}
               </p>
             </div>
