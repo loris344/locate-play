@@ -138,6 +138,7 @@ export default function Game() {
     setGuessMarker(null);
     setAnswerMarker(null);
     setRoundResult(null);
+    elapsedRef.current = 0;
   };
 
   // Access control check — only block BEFORE a game starts, not during/after
