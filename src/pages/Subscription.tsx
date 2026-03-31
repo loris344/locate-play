@@ -69,7 +69,7 @@ export default function Subscription() {
                 {isSubscribed
                   ? 'You have unlimited access to all games.'
                   : gamesPlayedToday >= 2
-                    ? 'Daily free limit reached (2/2).'
+                    ? `Daily free limit reached (${Math.min(gamesPlayedToday, 2)}/2).`
                     : `${gamesPlayedToday}/2 free daily games used`}
               </p>
             </div>
