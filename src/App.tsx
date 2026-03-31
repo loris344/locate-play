@@ -8,6 +8,7 @@ import Game from "./pages/Game.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
 import Leaderboard from "./pages/Leaderboard.tsx";
+import Subscription from "./pages/Subscription.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 const queryClient = new QueryClient();

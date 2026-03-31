@@ -1,0 +1,98 @@
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useGameAccess } from '@/hooks/useGameAccess';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import StripePricingTable from '@/components/StripePricingTable';
+
+export default function Subscription() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isSubscribed, gamesPlayedToday, loading } = useGameAccess();
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg p-8 text-center max-w-md space-y-4">
+          <Crown className="w-12 h-12 text-secondary mx-auto" />
+          <h2 className="text-2xl font-black text-gradient-hot">SIGN IN REQUIRED</h2>
+          <p className="text-muted-foreground">Sign in to manage your subscription.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => navigate('/auth?redirect=/subscription')} className="bg-gradient-hot font-bold">
+              Sign In
+            </Button>
+            <Button onClick={() => navigate('/')} variant="outline">Home</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-black text-gradient-hot">MY PLAN</h1>
+        </div>
+
+        {/* Current status */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-xl border-2 p-6 space-y-3 ${
+            isSubscribed ? 'border-green-500 bg-green-500/10' : 'border-border bg-card'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {isSubscribed ? (
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            ) : (
+              <XCircle className="w-8 h-8 text-muted-foreground" />
+            )}
+            <div>
+              <p className="text-xl font-black text-foreground">
+                {isSubscribed ? 'PREMIUM — Unlimited Games 🔥' : 'FREE PLAN'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {isSubscribed
+                  ? 'You have unlimited access to all games.'
+                  : `${gamesPlayedToday}/2 free daily games used`}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Pricing table if not subscribed */}
+        {!isSubscribed && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <h2 className="text-xl font-black text-foreground text-center">
+              Go Premium for Unlimited Play 👑
+            </h2>
+            <StripePricingTable />
+          </motion.div>
+        )}
+
+        <p className="text-xs text-muted-foreground text-center">
+          {user.email}
+        </p>
+      </div>
+    </div>
+  );
+}
