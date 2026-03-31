@@ -141,8 +141,8 @@ export default function Game() {
     elapsedRef.current = 0;
   };
 
-  // Access control check — only block BEFORE a game starts, not during/after
-  if (!gameAccess.loading && !gameAccess.canPlay && !gameOver && videos.length === 0) {
+  // Access control check — block any new game start when limit is reached
+  if (!gameAccess.loading && !gameAccess.canPlay && !gameOver && currentRound === 0 && !roundResult) {
     return <StripePaywall reason={gameAccess.reason as 'signin_required' | 'paywall'} />;
   }
 

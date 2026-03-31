@@ -68,7 +68,9 @@ export default function Subscription() {
               <p className="text-sm text-muted-foreground">
                 {isSubscribed
                   ? 'You have unlimited access to all games.'
-                  : `${gamesPlayedToday}/2 free daily games used`}
+                  : gamesPlayedToday >= 2
+                    ? 'Daily free limit reached (2/2).'
+                    : `${gamesPlayedToday}/2 free daily games used`}
               </p>
             </div>
           </div>
