@@ -67,7 +67,7 @@ export default function Auth() {
         className="w-full max-w-sm space-y-6"
       >
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black text-gradient-hot">PORNOGUESSR</h1>
+          <h1 className="text-4xl font-black text-gradient-hot">GEOGUSHING</h1>
           <p className="text-muted-foreground text-sm">{isLogin ? 'Welcome back' : 'Create your account'}</p>
         </div>
 
