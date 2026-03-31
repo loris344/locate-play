@@ -207,7 +207,7 @@ export default function Game() {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col gap-2 lg:gap-4 min-h-0 flex-1 lg:flex-auto">
+        <div className="flex flex-col gap-2 lg:gap-4 min-h-0 flex-1 lg:flex-auto pb-20 lg:pb-0">
           <div className="flex-1 min-h-[150px] lg:min-h-[300px]">
             <GameMapErrorBoundary>
               <GameMap
@@ -219,7 +219,7 @@ export default function Game() {
             </GameMapErrorBoundary>
           </div>
 
-          <div className="flex gap-3 shrink-0 pb-2 lg:pb-0">
+          <div className="fixed bottom-[max(12px,env(safe-area-inset-bottom))] left-2 right-2 z-50 flex gap-3 shrink-0 lg:static lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto">
             {!roundResult ? (
               <Button
                 onClick={handleSubmitGuess}

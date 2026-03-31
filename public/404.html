@@ -3,23 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/favicon.png" type="image/png" />
-    <title>GEOGUSHING - Watch. Guess. Score.</title>
-    <meta name="description" content="GEOGUSHING - Watch a clip, guess the location, score points!" />
-    <meta name="author" content="GEOGUSHING" />
-
-    <meta property="og:title" content="GEOGUSHING" />
-    <meta property="og:description" content="Watch a clip, guess the location, score points!" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <title>Redirecting…</title>
+    <script>
+      (function () {
+        var path = window.location.pathname + window.location.search + window.location.hash;
+        var normalized = path.startsWith('/') ? path.slice(1) : path;
+        window.location.replace('/#/' + normalized);
+      })();
+    </script>
   </head>
-
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <body></body>
 </html>
