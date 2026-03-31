@@ -143,12 +143,6 @@ export default function Game() {
     setRoundResult(null);
     elapsedRef.current = 0;
   };
-    setCurrentRound((prev) => prev + 1);
-    setGuessMarker(null);
-    setAnswerMarker(null);
-    setRoundResult(null);
-    elapsedRef.current = 0;
-  };
 
   // Access control check — block any new game start when limit is reached
   if (!gameAccess.loading && !gameAccess.canPlay && !gameOver && currentRound === 0 && !roundResult) {

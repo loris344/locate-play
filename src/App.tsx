@@ -28,7 +28,7 @@ function GameRoute() {
   }
 
   if (!gameAccess.canPlay) {
-    return <Navigate to={gameAccess.reason === "paywall" ? "/subscription" : "/auth?redirect=/game"} replace />;
+    return <Navigate to={gameAccess.reason === "paywall" ? "/subscription" : "/auth?redirect=%2Fgame"} replace />;
   }
 
   return <Game />;
