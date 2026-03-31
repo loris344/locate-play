@@ -33,6 +33,7 @@ function calculateScore(distance: number): number {
 export default function Game() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const gameAccess = useGameAccess();
   const [videos, setVideos] = useState<Video[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
