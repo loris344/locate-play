@@ -240,6 +240,17 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
+      <AnimatePresence>
+        {showIntro && currentVideo && (
+          <RoundIntro
+            actorName={currentVideo.actor_name}
+            actorPhotoUrl={currentVideo.actor_photo_url}
+            round={currentRound + 1}
+            totalRounds={TOTAL_ROUNDS}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="border-b border-border px-4 py-2 flex items-center justify-between">
         <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
           GEOGUSHING
