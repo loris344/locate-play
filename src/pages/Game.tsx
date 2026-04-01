@@ -285,6 +285,7 @@ export default function Game() {
                 country={currentVideo.country}
                 timeMultiplier={roundResult.timeMultiplier}
                 baseScore={roundResult.baseScore}
+                sourceUrl={currentVideo.source_url}
               />
             )}
           </AnimatePresence>
