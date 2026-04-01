@@ -12,4 +12,6 @@ export interface Video {
   longitude: number;
   city: string;
   country: string;
+  actor_name?: string;
+  actor_photo_url?: string;
 }

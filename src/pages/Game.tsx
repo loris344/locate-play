@@ -9,6 +9,7 @@ import ScoreDisplay from "@/components/ScoreDisplay";
 import StripePaywall from "@/components/StripePaywall";
 import StripePricingTable from "@/components/StripePricingTable";
 import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundTimer";
+import RoundIntro from "@/components/RoundIntro";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2, Crown } from "lucide-react";
@@ -47,11 +48,17 @@ export default function Game() {
   const [gameOver, setGameOver] = useState(false);
   const elapsedRef = useRef(0);
   const [timerActive, setTimerActive] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
 
-  // Start timer when videos load
+  // Show intro for 2.5 seconds before each round
   useEffect(() => {
     if (videos.length > 0 && !gameOver) {
-      setTimerActive(true);
+      setShowIntro(true);
+      const timer = setTimeout(() => {
+        setShowIntro(false);
+        setTimerActive(true);
+      }, 2500);
+      return () => clearTimeout(timer);
     }
   }, [videos, currentRound, gameOver]);
   useEffect(() => {
@@ -233,6 +240,17 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
+      <AnimatePresence>
+        {showIntro && currentVideo && (
+          <RoundIntro
+            actorName={currentVideo.actor_name}
+            actorPhotoUrl={currentVideo.actor_photo_url}
+            round={currentRound + 1}
+            totalRounds={TOTAL_ROUNDS}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="border-b border-border px-4 py-2 flex items-center justify-between">
         <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
           GEOGUSHING
