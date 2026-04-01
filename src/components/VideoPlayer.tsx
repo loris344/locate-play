@@ -11,6 +11,8 @@ function getSourceInfo(url: string): { type: 'iframe' | 'video' | 'unsupported';
     const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/i);
     if (yt) return { type: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}` };
     if (/\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url)) return { type: 'video', src: url };
+    // Supabase Storage URLs often don't have extensions in the path — detect them
+    if (/supabase\.co\/storage\/v1\/object\/(public|sign)/i.test(url)) return { type: 'video', src: url };
     if (
       (h === 'xnxx.com' && /^\/embedframe\/[A-Za-z0-9]+/i.test(u.pathname)) ||
       (h === 'pornhub.com' && /^\/embed\/[A-Za-z0-9]+/i.test(u.pathname)) ||
