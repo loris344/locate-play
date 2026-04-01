@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 interface VideoPlayerProps {
   url: string;
@@ -10,7 +11,7 @@ function getSourceInfo(url: string): { type: 'iframe' | 'video' | 'unsupported';
     const h = u.hostname.replace(/^www\./, '');
     const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/i);
 
-    if (yt) return { type: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}` };
+    if (yt) return { type: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}?autoplay=1&mute=1` };
     if (/\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url)) return { type: 'video', src: url };
     if (/supabase\.co\/storage\/v1\/object\/(public|sign)/i.test(url)) return { type: 'video', src: url };
 
@@ -30,10 +31,19 @@ function getSourceInfo(url: string): { type: 'iframe' | 'video' | 'unsupported';
 
 export default function VideoPlayer({ url }: VideoPlayerProps) {
   const source = useMemo(() => getSourceInfo(url), [url]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setMuted(videoRef.current.muted);
+    }
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border-2 border-border bg-card shadow-neon">
-      <div className="aspect-video w-full bg-muted">
+      <div className="relative aspect-video w-full bg-muted">
         {source.type === 'iframe' ? (
           <iframe
             src={source.src}
@@ -44,15 +54,27 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
             referrerPolicy="strict-origin-when-cross-origin"
           />
         ) : source.type === 'video' ? (
-          <video
-            key={source.src}
-            src={source.src}
-            controls
-            playsInline
-            loop
-            preload="metadata"
-            className="h-full w-full object-cover"
-          />
+          <>
+            <video
+              ref={videoRef}
+              key={source.src}
+              src={source.src}
+              autoPlay
+              muted
+              controls
+              playsInline
+              loop
+              preload="metadata"
+              className="h-full w-full object-cover"
+            />
+            <button
+              onClick={toggleMute}
+              className="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition-opacity hover:bg-black/80"
+              aria-label={muted ? 'Activer le son' : 'Couper le son'}
+            >
+              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </button>
+          </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
             <div className="space-y-2">
