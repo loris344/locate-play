@@ -276,16 +276,6 @@ export default function Game() {
         <div className="min-h-0 flex flex-col">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
 
-          {currentVideo?.source_url && !roundResult && (
-            <a
-              href={currentVideo.source_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 mt-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors self-start"
-            >
-              <ExternalLink className="h-3.5 w-3.5" /> Watch Original
-            </a>
-          )}
 
           <AnimatePresence>
             {roundResult && (
@@ -313,16 +303,29 @@ export default function Game() {
           </GameMapErrorBoundary>
         </div>
 
-        <div className="sticky bottom-0 z-10 flex gap-3 pb-[max(env(safe-area-inset-bottom),4px)] bg-background pt-1 lg:col-span-1 lg:col-start-2">
+        <div className="sticky bottom-0 z-10 flex gap-2 pb-[max(env(safe-area-inset-bottom),4px)] bg-background pt-1 lg:col-span-1 lg:col-start-2">
           {!roundResult ? (
-            <Button
-              onClick={handleSubmitGuess}
-              disabled={!guessMarker}
-              className="flex-1 bg-gradient-hot font-black text-lg h-12 shadow-glow animate-pulse-glow disabled:opacity-50 disabled:animate-none"
-            >
-              <MapPin className="mr-2 h-5 w-5" />
-              GUESS!
-            </Button>
+            <>
+              {currentVideo?.source_url && (
+                <a
+                  href={currentVideo.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary/10 px-3 h-12 text-xs font-bold text-primary hover:bg-primary/20 transition-colors shrink-0"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span className="hidden sm:inline">Original</span>
+                </a>
+              )}
+              <Button
+                onClick={handleSubmitGuess}
+                disabled={!guessMarker}
+                className="flex-1 bg-gradient-hot font-black text-lg h-12 shadow-glow animate-pulse-glow disabled:opacity-50 disabled:animate-none"
+              >
+                <MapPin className="mr-2 h-5 w-5" />
+                GUESS!
+              </Button>
+            </>
           ) : (
             <Button
               onClick={handleNextRound}
