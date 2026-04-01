@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Instagram, Calendar } from 'lucide-react';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, MessageCircle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StripePricingTable from '@/components/StripePricingTable';
 import { useState, useEffect } from 'react';
