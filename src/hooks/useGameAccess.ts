@@ -71,6 +71,7 @@ export function useGameAccess(): GameAccess {
   const [gamesPlayedToday, setGamesPlayedToday] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
 
   useEffect(() => {
     async function check() {
