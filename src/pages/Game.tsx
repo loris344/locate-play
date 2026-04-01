@@ -251,12 +251,12 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      <div className="border-b border-border px-4 py-2 flex items-center justify-between">
-        <button onClick={() => navigate("/")} className="text-xl font-black text-gradient-hot tracking-tight">
+      <div className="border-b border-border px-2 lg:px-4 py-2 flex items-center justify-between overflow-hidden">
+        <button onClick={() => navigate("/")} className="text-lg lg:text-xl font-black text-gradient-hot tracking-tight shrink-0">
           GEOGUSHING
         </button>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(user ? '/subscription' : '/auth?redirect=/subscription')} className="text-muted-foreground hover:text-foreground">
+        <div className="flex items-center gap-1.5 lg:gap-3 min-w-0">
+          <Button variant="ghost" size="sm" onClick={() => navigate(user ? '/subscription' : '/auth?redirect=/subscription')} className="text-muted-foreground hover:text-foreground px-1.5 lg:px-3 hidden lg:flex">
             <Crown className="h-4 w-4 mr-1" /> My Plan
           </Button>
           <RoundTimer
@@ -265,10 +265,10 @@ export default function Game() {
             onTimeUp={handleTimeUp}
             onElapsedChange={(e) => { elapsedRef.current = e; }}
           />
-          <span className="text-muted-foreground font-bold text-sm">
-            Round <span className="text-foreground">{currentRound + 1}</span>/{TOTAL_ROUNDS}
+          <span className="text-muted-foreground font-bold text-xs lg:text-sm">
+            <span className="text-foreground">{currentRound + 1}</span>/{TOTAL_ROUNDS}
           </span>
-          <span className="text-secondary font-black text-lg">{totalScore.toLocaleString()} pts</span>
+          <span className="text-secondary font-black text-sm lg:text-lg">{totalScore.toLocaleString()}</span>
         </div>
       </div>
 
