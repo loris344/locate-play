@@ -80,19 +80,14 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
               key={source.src}
               ref={videoRef}
               src={source.src}
-              autoPlay
-              muted
               playsInline
               // @ts-ignore
               webkit-playsinline="true"
               loop
-              preload="auto"
-              controls={false}
+              preload="metadata"
+              controls
               className="h-full w-full object-cover"
               onLoadedMetadata={(e) => tryPlay(e.currentTarget)}
-              onCanPlay={(e) => {
-                if (e.currentTarget.paused) tryPlay(e.currentTarget);
-              }}
               onPlay={() => setRequiresTapToPlay(false)}
               onError={() => setVideoFailed(true)}
             >
