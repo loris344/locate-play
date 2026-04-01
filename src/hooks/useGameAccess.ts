@@ -188,5 +188,5 @@ export function useGameAccess(): GameAccess {
     setGamesPlayedToday(prev => Math.max(prev + 1, localCount));
   };
 
-  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, recordGamePlayed };
+  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, planLabel, recordGamePlayed };
 }
