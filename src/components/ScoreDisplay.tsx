@@ -13,7 +13,7 @@ interface ScoreDisplayProps {
   sourceUrl?: string;
 }
 
-export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore }: ScoreDisplayProps) {
+export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore, sourceUrl }: ScoreDisplayProps) {
   const [dismissed, setDismissed] = useState(false);
 
   const getEmoji = (score: number) => {
