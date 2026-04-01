@@ -123,10 +123,10 @@ export default function Index() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.3 }}
-          className="flex items-center gap-2 bg-muted/60 backdrop-blur-sm rounded-full px-4 py-2 border border-border/50"
+          className="flex items-center gap-3 bg-muted/60 backdrop-blur-sm rounded-full px-6 py-3 border border-border/50"
         >
-          <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
-          <span className="text-xs text-muted-foreground font-medium">
+          <ShieldCheck className="h-5 w-5 text-accent shrink-0" />
+          <span className="text-sm text-muted-foreground font-semibold">
             100% SFW — Stream-safe, no explicit content
           </span>
         </motion.div>
