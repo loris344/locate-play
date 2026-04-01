@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { getTimeLabel } from './RoundTimer';
 
 interface ScoreDisplayProps {
@@ -10,6 +10,7 @@ interface ScoreDisplayProps {
   country: string;
   timeMultiplier?: number;
   baseScore?: number;
+  sourceUrl?: string;
 }
 
 export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore }: ScoreDisplayProps) {
