@@ -13,6 +13,7 @@ interface GameAccess {
   loading: boolean;
   gamesPlayedToday: number;
   isSubscribed: boolean;
+  subscriptionEnd: string | null;
   recordGamePlayed: () => void;
 }
 
