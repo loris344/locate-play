@@ -17,7 +17,10 @@ export default function Index() {
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
         {user ? (
           <>
-            <span className="text-sm text-muted-foreground">{user.user_metadata?.username || user.email}</span>
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              {isSubscribed && <Crown className="h-4 w-4 text-yellow-400" />}
+              {user.user_metadata?.username || user.email}
+            </span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>

@@ -39,7 +39,7 @@ function GlobalNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (location.pathname === '/subscription') return null;
+  if (location.pathname === '/subscription' || location.pathname === '/game') return null;
 
   return (
     <Button
