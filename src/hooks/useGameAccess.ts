@@ -69,6 +69,7 @@ export function useGameAccess(): GameAccess {
   const [loading, setLoading] = useState(true);
   const [gamesPlayedToday, setGamesPlayedToday] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
 
   useEffect(() => {
     async function check() {
