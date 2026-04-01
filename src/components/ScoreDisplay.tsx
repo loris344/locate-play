@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { getTimeLabel } from './RoundTimer';
 
 interface ScoreDisplayProps {
@@ -10,9 +10,10 @@ interface ScoreDisplayProps {
   country: string;
   timeMultiplier?: number;
   baseScore?: number;
+  sourceUrl?: string;
 }
 
-export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore }: ScoreDisplayProps) {
+export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore, sourceUrl }: ScoreDisplayProps) {
   const [dismissed, setDismissed] = useState(false);
 
   const getEmoji = (score: number) => {
@@ -68,6 +69,16 @@ export default function ScoreDisplay({ distance, score, city, country, timeMulti
         <p className="text-xs text-muted-foreground">
           {Math.round(distance)} km from <span className="text-secondary font-bold">{city}, {country}</span>
         </p>
+        {sourceUrl && (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 mt-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> Watch Original
+          </a>
+        )}
       </motion.div>
     </AnimatePresence>
   );
