@@ -272,7 +272,7 @@ export default function Game() {
         </div>
       </div>
 
-      <div className="grid grid-rows-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-hidden">
+      <div className="flex flex-col lg:grid lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-auto lg:overflow-hidden">
         <div className="min-h-0 flex flex-col">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
 
