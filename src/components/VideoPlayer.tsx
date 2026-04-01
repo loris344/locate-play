@@ -79,7 +79,7 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
               controls
               autoPlay
               muted
-              defaultMuted
+              muted
               playsInline
               preload="metadata"
               className="h-full w-full object-cover"
