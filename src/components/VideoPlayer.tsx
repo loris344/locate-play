@@ -9,9 +9,11 @@ function getSourceInfo(url: string): { type: 'iframe' | 'video' | 'unsupported';
     const u = new URL(url.trim());
     const h = u.hostname.replace(/^www\./, '');
     const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/i);
+
     if (yt) return { type: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}` };
     if (/\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url)) return { type: 'video', src: url };
     if (/supabase\.co\/storage\/v1\/object\/(public|sign)/i.test(url)) return { type: 'video', src: url };
+
     if (
       (h === 'xnxx.com' && /^\/embedframe\/[A-Za-z0-9]+/i.test(u.pathname)) ||
       (h === 'pornhub.com' && /^\/embed\/[A-Za-z0-9]+/i.test(u.pathname)) ||
@@ -19,6 +21,7 @@ function getSourceInfo(url: string): { type: 'iframe' | 'video' | 'unsupported';
     ) {
       return { type: 'iframe', src: url };
     }
+
     return { type: 'unsupported', src: url };
   } catch {
     return { type: 'unsupported', src: url };
@@ -36,40 +39,27 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
     setRequiresTapToPlay(false);
   }, [source.src]);
 
-  useEffect(() => {
-    if (source.type !== 'video' || !videoRef.current) return;
-
-    const video = videoRef.current;
+  const tryPlay = (video: HTMLVideoElement) => {
     video.muted = true;
     video.defaultMuted = true;
     video.setAttribute('playsinline', 'true');
     video.setAttribute('webkit-playsinline', 'true');
 
-    const tryPlay = () => {
-      const playPromise = video.play();
-      if (playPromise?.catch) {
-        playPromise.catch(() => setRequiresTapToPlay(true));
-      }
-    };
-
-    if (video.readyState >= 2) {
-      tryPlay();
-    } else {
-      video.load();
-      video.addEventListener('loadedmetadata', tryPlay, { once: true });
+    const playPromise = video.play();
+    if (playPromise?.catch) {
+      playPromise
+        .then(() => setRequiresTapToPlay(false))
+        .catch(() => setRequiresTapToPlay(true));
     }
 
-    return () => {
-      video.removeEventListener('loadedmetadata', tryPlay);
-    };
-  }, [source.src, source.type]);
+    window.setTimeout(() => {
+      if (video.paused) setRequiresTapToPlay(true);
+    }, 1200);
+  };
 
   const handleTapToPlay = () => {
     if (!videoRef.current) return;
-    videoRef.current
-      .play()
-      .then(() => setRequiresTapToPlay(false))
-      .catch(() => setVideoFailed(true));
+    tryPlay(videoRef.current);
   };
 
   return (
@@ -87,15 +77,22 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
         ) : source.type === 'video' && !videoFailed ? (
           <div className="relative h-full w-full">
             <video
+              key={source.src}
               ref={videoRef}
               src={source.src}
-              controls
               autoPlay
               muted
               playsInline
-              preload="metadata"
+              loop
+              preload="auto"
+              controls={false}
+              crossOrigin="anonymous"
               className="h-full w-full object-cover"
-              onCanPlay={() => setVideoFailed(false)}
+              onLoadedMetadata={(e) => tryPlay(e.currentTarget)}
+              onCanPlay={(e) => {
+                if (e.currentTarget.paused) tryPlay(e.currentTarget);
+              }}
+              onPlay={() => setRequiresTapToPlay(false)}
               onError={() => setVideoFailed(true)}
             >
               Your browser does not support the video tag.
@@ -128,10 +125,6 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
             >
               Open clip in new tab
             </a>
-
-            <p className="max-w-md text-xs text-muted-foreground">
-              For inline playback here, store a direct <span className="font-bold text-foreground">.mp4</span> or <span className="font-bold text-foreground">.webm</span> URL in <span className="font-bold text-foreground">video_url</span>.
-            </p>
           </div>
         )}
       </div>
