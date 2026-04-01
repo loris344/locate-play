@@ -45,10 +45,23 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
     video.setAttribute('playsinline', 'true');
     video.setAttribute('webkit-playsinline', 'true');
 
-    const playPromise = video.play();
-    if (playPromise?.catch) {
-      playPromise.catch(() => setRequiresTapToPlay(true));
+    const tryPlay = () => {
+      const playPromise = video.play();
+      if (playPromise?.catch) {
+        playPromise.catch(() => setRequiresTapToPlay(true));
+      }
+    };
+
+    if (video.readyState >= 2) {
+      tryPlay();
+    } else {
+      video.load();
+      video.addEventListener('loadedmetadata', tryPlay, { once: true });
     }
+
+    return () => {
+      video.removeEventListener('loadedmetadata', tryPlay);
+    };
   }, [source.src, source.type]);
 
   const handleTapToPlay = () => {
