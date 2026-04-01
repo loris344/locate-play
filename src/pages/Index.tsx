@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, LogOut } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGameAccess } from '@/hooks/useGameAccess';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 
 export default function Index() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isSubscribed } = useGameAccess();
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -15,7 +17,10 @@ export default function Index() {
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
         {user ? (
           <>
-            <span className="text-sm text-muted-foreground">{user.user_metadata?.username || user.email}</span>
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              {isSubscribed && <Crown className="h-4 w-4 text-yellow-400" />}
+              {user.user_metadata?.username || user.email}
+            </span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>

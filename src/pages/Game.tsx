@@ -11,7 +11,7 @@ import StripePricingTable from "@/components/StripePricingTable";
 import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundTimer";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
+import { ArrowRight, MapPin, Trophy, Loader2, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const TOTAL_ROUNDS = 5;
@@ -238,6 +238,9 @@ export default function Game() {
           GEOGUSHING
         </button>
         <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(user ? '/subscription' : '/auth?redirect=/subscription')} className="text-muted-foreground hover:text-foreground">
+            <Crown className="h-4 w-4 mr-1" /> My Plan
+          </Button>
           <RoundTimer
             roundId={currentRound}
             stopped={!!roundResult}

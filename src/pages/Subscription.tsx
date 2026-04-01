@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Instagram } from 'lucide-react';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Instagram, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StripePricingTable from '@/components/StripePricingTable';
 import { useState, useEffect } from 'react';
@@ -37,7 +37,7 @@ function ResetCountdown() {
 export default function Subscription() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSubscribed, gamesPlayedToday, loading } = useGameAccess();
+  const { isSubscribed, subscriptionEnd, gamesPlayedToday, loading } = useGameAccess();
 
   if (!user) {
     return (
@@ -91,15 +91,23 @@ export default function Subscription() {
             )}
             <div>
               <p className="text-xl font-black text-foreground">
-                {isSubscribed ? 'PREMIUM — Unlimited Games 🔥' : 'FREE PLAN'}
+                {isSubscribed ? 'PREMIUM 👑' : 'FREE PLAN'}
               </p>
               <p className="text-sm text-muted-foreground">
                 {isSubscribed
-                  ? 'You have unlimited access to all games.'
+                  ? subscriptionEnd
+                    ? `Unlimited games • Renews ${new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                    : 'Unlimited games'
                   : gamesPlayedToday >= 2
                     ? `Daily free limit reached (${Math.min(gamesPlayedToday, 2)}/2).`
                     : `${gamesPlayedToday}/2 free daily games used`}
               </p>
+              {isSubscribed && subscriptionEnd && (
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-green-400">
+                  <Calendar className="w-3 h-3" />
+                  <span>{Math.max(0, Math.ceil((new Date(subscriptionEnd).getTime() - Date.now()) / 86400000))} days remaining</span>
+                </div>
+              )}
             </div>
           </div>
           {!isSubscribed && gamesPlayedToday >= 2 && <ResetCountdown />}

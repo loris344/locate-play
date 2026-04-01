@@ -13,6 +13,7 @@ interface GameAccess {
   loading: boolean;
   gamesPlayedToday: number;
   isSubscribed: boolean;
+  subscriptionEnd: string | null;
   recordGamePlayed: () => void;
 }
 
@@ -68,6 +69,7 @@ export function useGameAccess(): GameAccess {
   const [loading, setLoading] = useState(true);
   const [gamesPlayedToday, setGamesPlayedToday] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
 
   useEffect(() => {
     async function check() {
@@ -98,6 +100,7 @@ export function useGameAccess(): GameAccess {
       );
 
       setIsSubscribed(subscribed);
+      setSubscriptionEnd(sub?.expires_at || null);
       if (subscribed) {
         setGamesPlayedToday(0);
         setLoading(false);
@@ -164,5 +167,5 @@ export function useGameAccess(): GameAccess {
     setGamesPlayedToday(prev => Math.max(prev + 1, localCount));
   };
 
-  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, recordGamePlayed };
+  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, recordGamePlayed };
 }
