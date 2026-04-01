@@ -44,7 +44,6 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
             src={source.src}
             controls
             autoPlay
-            muted
             playsInline
             className="h-full w-full object-cover"
             onError={() => setVideoFailed(true)}
