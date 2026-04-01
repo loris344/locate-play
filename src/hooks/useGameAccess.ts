@@ -14,6 +14,7 @@ interface GameAccess {
   gamesPlayedToday: number;
   isSubscribed: boolean;
   subscriptionEnd: string | null;
+  planLabel: string | null;
   recordGamePlayed: () => void;
 }
 
