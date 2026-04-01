@@ -313,7 +313,7 @@ export default function Game() {
           </GameMapErrorBoundary>
         </div>
 
-        <div className="flex gap-3 pb-[max(env(safe-area-inset-bottom),4px)] lg:col-span-1 lg:col-start-2">
+        <div className="sticky bottom-0 z-10 flex gap-3 pb-[max(env(safe-area-inset-bottom),4px)] bg-background pt-1 lg:col-span-1 lg:col-start-2">
           {!roundResult ? (
             <Button
               onClick={handleSubmitGuess}
