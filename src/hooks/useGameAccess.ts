@@ -14,6 +14,7 @@ interface GameAccess {
   gamesPlayedToday: number;
   isSubscribed: boolean;
   subscriptionEnd: string | null;
+  planLabel: string | null;
   recordGamePlayed: () => void;
 }
 
@@ -70,6 +71,7 @@ export function useGameAccess(): GameAccess {
   const [gamesPlayedToday, setGamesPlayedToday] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
 
   useEffect(() => {
     async function check() {
@@ -85,7 +87,7 @@ export function useGameAccess(): GameAccess {
 
       const { data: sub, error: subError } = await supabase
         .from('subscriptions')
-        .select('status, expires_at')
+        .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -101,6 +103,25 @@ export function useGameAccess(): GameAccess {
 
       setIsSubscribed(subscribed);
       setSubscriptionEnd(sub?.expires_at || null);
+
+      // Detect plan label from column or deduce from created_at/expires_at
+      if (subscribed && sub) {
+        const rawPlan = sub.plan || sub.plan_type || sub.interval || null;
+        if (rawPlan) {
+          const labels: Record<string, string> = { month: 'Monthly', monthly: 'Monthly', quarter: 'Quarterly', quarterly: 'Quarterly', year: 'Yearly', yearly: 'Yearly', annual: 'Yearly' };
+          setPlanLabel(labels[rawPlan.toLowerCase()] || rawPlan);
+        } else if (sub.expires_at && sub.created_at) {
+          const diffDays = Math.round((new Date(sub.expires_at).getTime() - new Date(sub.created_at).getTime()) / 86400000);
+          if (diffDays <= 35) setPlanLabel('Monthly');
+          else if (diffDays <= 100) setPlanLabel('Quarterly');
+          else setPlanLabel('Yearly');
+        } else {
+          setPlanLabel('Premium');
+        }
+      } else {
+        setPlanLabel(null);
+      }
+
       if (subscribed) {
         setGamesPlayedToday(0);
         setLoading(false);
@@ -167,5 +188,5 @@ export function useGameAccess(): GameAccess {
     setGamesPlayedToday(prev => Math.max(prev + 1, localCount));
   };
 
-  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, recordGamePlayed };
+  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, planLabel, recordGamePlayed };
 }
