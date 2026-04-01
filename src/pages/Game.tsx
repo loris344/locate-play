@@ -12,7 +12,7 @@ import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundT
 import RoundIntro from "@/components/RoundIntro";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, MapPin, Trophy, Loader2, Crown } from "lucide-react";
+import { ArrowRight, MapPin, Trophy, Loader2, Crown, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const TOTAL_ROUNDS = 5;
@@ -275,6 +275,17 @@ export default function Game() {
       <div className="grid grid-rows-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-hidden">
         <div className="min-h-0 flex flex-col">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
+
+          {currentVideo?.source_url && !roundResult && (
+            <a
+              href={currentVideo.source_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 mt-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors self-start"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Watch Original
+            </a>
+          )}
 
           <AnimatePresence>
             {roundResult && (
