@@ -83,10 +83,11 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
               autoPlay
               muted
               playsInline
+              // @ts-ignore
+              webkit-playsinline="true"
               loop
               preload="auto"
               controls={false}
-              crossOrigin="anonymous"
               className="h-full w-full object-cover"
               onLoadedMetadata={(e) => tryPlay(e.currentTarget)}
               onCanPlay={(e) => {
