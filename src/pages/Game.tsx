@@ -272,7 +272,7 @@ export default function Game() {
         </div>
       </div>
 
-      <div className="grid grid-rows-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-hidden">
+      <div className="flex flex-col lg:grid lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-auto lg:overflow-hidden">
         <div className="min-h-0 flex flex-col">
           {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
 
@@ -302,7 +302,7 @@ export default function Game() {
           </AnimatePresence>
         </div>
 
-        <div className="min-h-0">
+        <div className="min-h-[200px] lg:min-h-0 flex-1 lg:flex-none">
           <GameMapErrorBoundary>
             <GameMap
               onGuess={handleGuess}
@@ -313,7 +313,7 @@ export default function Game() {
           </GameMapErrorBoundary>
         </div>
 
-        <div className="flex gap-3 pb-[max(env(safe-area-inset-bottom),4px)] lg:col-span-1 lg:col-start-2">
+        <div className="sticky bottom-0 z-10 flex gap-3 pb-[max(env(safe-area-inset-bottom),4px)] bg-background pt-1 lg:col-span-1 lg:col-start-2">
           {!roundResult ? (
             <Button
               onClick={handleSubmitGuess}
