@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
