@@ -11,7 +11,7 @@ import StripePricingTable from "@/components/StripePricingTable";
 import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundTimer";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, MapPin, Trophy, Loader2 } from "lucide-react";
+import { ArrowRight, MapPin, Trophy, Loader2, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const TOTAL_ROUNDS = 5;
