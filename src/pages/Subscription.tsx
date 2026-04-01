@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Instagram, Calendar } from 'lucide-react';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, MessageCircle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StripePricingTable from '@/components/StripePricingTable';
 import { useState, useEffect } from 'react';
@@ -138,14 +138,14 @@ export default function Subscription() {
         {/* Contact discret */}
         <div className="pt-4 border-t border-border">
           <a
-            href="https://instagram.com/loris_dtg"
+            href="https://wa.me/33767135458"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mx-auto w-fit text-xs"
           >
             <img src={lorisImg} alt="" className="w-7 h-7 rounded-full object-cover" />
             <span>Bug or question?</span>
-            <Instagram className="w-3.5 h-3.5" />
+            <MessageCircle className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>
