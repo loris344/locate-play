@@ -9,6 +9,7 @@ import ScoreDisplay from "@/components/ScoreDisplay";
 import StripePaywall from "@/components/StripePaywall";
 import StripePricingTable from "@/components/StripePricingTable";
 import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundTimer";
+import RoundIntro from "@/components/RoundIntro";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2, Crown } from "lucide-react";
