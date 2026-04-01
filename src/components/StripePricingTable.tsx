@@ -1,4 +1,5 @@
 import { Crown } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PLANS = [
   {
@@ -24,12 +25,20 @@ const PLANS = [
 ];
 
 export default function StripePricingTable() {
+  const { user } = useAuth();
+
+  const getUrl = (baseUrl: string) => {
+    if (!user) return baseUrl;
+    const sep = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${sep}client_reference_id=${user.id}&prefilled_email=${encodeURIComponent(user.email || "")}`;
+  };
+
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3">
       {PLANS.map((plan) => (
         <a
           key={plan.name}
-          href={plan.url}
+          href={getUrl(plan.url)}
           target="_blank"
           rel="noopener noreferrer"
           className={`relative rounded-xl border-2 p-5 text-center transition-all hover:scale-[1.02] ${
