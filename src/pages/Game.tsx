@@ -302,7 +302,7 @@ export default function Game() {
           </AnimatePresence>
         </div>
 
-        <div className="min-h-0">
+        <div className="min-h-[200px] lg:min-h-0 flex-1 lg:flex-none">
           <GameMapErrorBoundary>
             <GameMap
               onGuess={handleGuess}
