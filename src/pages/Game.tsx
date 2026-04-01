@@ -48,11 +48,17 @@ export default function Game() {
   const [gameOver, setGameOver] = useState(false);
   const elapsedRef = useRef(0);
   const [timerActive, setTimerActive] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
 
-  // Start timer when videos load
+  // Show intro for 2.5 seconds before each round
   useEffect(() => {
     if (videos.length > 0 && !gameOver) {
-      setTimerActive(true);
+      setShowIntro(true);
+      const timer = setTimeout(() => {
+        setShowIntro(false);
+        setTimerActive(true);
+      }, 2500);
+      return () => clearTimeout(timer);
     }
   }, [videos, currentRound, gameOver]);
   useEffect(() => {
