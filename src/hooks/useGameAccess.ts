@@ -87,7 +87,7 @@ export function useGameAccess(): GameAccess {
 
       const { data: sub, error: subError } = await supabase
         .from('subscriptions')
-        .select('status, expires_at')
+        .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
