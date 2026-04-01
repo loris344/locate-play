@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
@@ -118,6 +118,18 @@ export default function Index() {
             18+ only • 5 rounds per game • Sign in to save scores
           </motion.p>
         )}
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.3 }}
+          className="flex items-center gap-2 bg-muted/60 backdrop-blur-sm rounded-full px-4 py-2 border border-border/50"
+        >
+          <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
+          <span className="text-xs text-muted-foreground font-medium">
+            100% SFW — Stream-safe, no explicit content
+          </span>
+        </motion.div>
       </motion.div>
     </div>
   );
