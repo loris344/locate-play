@@ -37,7 +37,7 @@ function ResetCountdown() {
 export default function Subscription() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSubscribed, subscriptionEnd, gamesPlayedToday, loading } = useGameAccess();
+  const { isSubscribed, subscriptionEnd, planLabel, gamesPlayedToday, loading } = useGameAccess();
 
   if (!user) {
     return (
