@@ -100,6 +100,7 @@ export function useGameAccess(): GameAccess {
       );
 
       setIsSubscribed(subscribed);
+      setSubscriptionEnd(sub?.expires_at || null);
       if (subscribed) {
         setGamesPlayedToday(0);
         setLoading(false);
