@@ -65,7 +65,7 @@ export default function Game() {
     async function fetchVideos() {
       setLoading(true);
       console.log("[GEOGUSHING] Fetching videos from Supabase...");
-      const { data, error } = await supabase.from("videos").select("*").limit(50);
+      const { data, error } = await supabase.from("videos").select("*").limit(100);
       console.log("[GEOGUSHING] Result:", { data, error });
 
       if (error) {
@@ -80,7 +80,24 @@ export default function Game() {
         return;
       }
 
-      const shuffled = data.sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
+      // Filter out already-seen videos
+      const seenKey = "geogushing_seen_videos";
+      let seen: string[] = [];
+      try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch { seen = []; }
+
+      let available = data.filter((v) => !seen.includes(v.id));
+      // If not enough unseen videos, reset history
+      if (available.length < TOTAL_ROUNDS) {
+        localStorage.setItem(seenKey, "[]");
+        available = data;
+      }
+
+      const shuffled = available.sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
+
+      // Save these as seen
+      const newSeen = [...seen, ...shuffled.map((v) => v.id)];
+      localStorage.setItem(seenKey, JSON.stringify(newSeen));
+
       setVideos(shuffled);
       setLoading(false);
     }
