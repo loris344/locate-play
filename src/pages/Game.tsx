@@ -86,10 +86,11 @@ export default function Game() {
       try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch { seen = []; }
 
       let available = data.filter((v) => !seen.includes(v.id));
-      // If not enough unseen videos, reset history
+      // All videos have been seen
       if (available.length < TOTAL_ROUNDS) {
-        localStorage.setItem(seenKey, "[]");
-        available = data;
+        setError("You've seen all available videos! New rounds are coming soon 🎬");
+        setLoading(false);
+        return;
       }
 
       const shuffled = available.sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
