@@ -13,6 +13,7 @@ import Leaderboard from "./pages/Leaderboard.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.tsx";
 import { useGameAccess } from "./hooks/useGameAccess";
+import UsernamePrompt from "./components/UsernamePrompt.tsx";
 
 const queryClient = new QueryClient();
 
