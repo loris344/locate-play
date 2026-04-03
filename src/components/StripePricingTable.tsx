@@ -6,21 +6,21 @@ const PLANS = [
     name: "Monthly",
     price: "$5.90",
     period: "/month",
-    url: "https://buy.stripe.com/test_14AfZhbkX4ZR1WnaIhcZa00",
+    url: "https://buy.stripe.com/7sY8wP3SvakbasTaIhcZa02",
   },
   {
     name: "Quarterly",
     price: "$15",
     period: "/3 months",
     badge: "POPULAR",
-    url: "https://buy.stripe.com/test_dRm5kDagT9g7bwX9EdcZa01",
+    url: "https://buy.stripe.com/bJe5kD0Gjakb58z2bLcZa03",
   },
   {
     name: "Yearly",
     price: "$55",
     period: "/year",
     badge: "BEST VALUE",
-    url: "https://buy.stripe.com/test_7sY8wP3SvakbasTaIhcZa02",
+    url: "https://buy.stripe.com/8x26oH60D0JBasT03DcZa04",
   },
 ];
 
