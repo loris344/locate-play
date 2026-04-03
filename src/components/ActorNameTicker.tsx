@@ -23,7 +23,7 @@ export default function ActorNameTicker() {
     if (names.length === 0) return;
     const interval = setInterval(() => {
       setIndex((i) => (i + 1) % names.length);
-    }, 2000);
+    }, 3500);
     return () => clearInterval(interval);
   }, [names]);
 
