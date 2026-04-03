@@ -30,20 +30,22 @@ export default function ActorNameTicker() {
   if (names.length === 0) return null;
 
   return (
-    <div className="h-10 flex items-center justify-center overflow-hidden">
-      <span className="text-muted-foreground text-lg font-semibold mr-2">Find</span>
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={names[index]}
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -20, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="text-lg font-black text-gradient-hot"
-        >
-          {names[index]}
-        </motion.span>
-      </AnimatePresence>
+    <div className="h-10 flex items-center justify-center">
+      <span className="text-muted-foreground text-lg font-semibold mr-2 shrink-0">Find</span>
+      <div className="relative h-8 w-40 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={names[index]}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-lg font-black text-gradient-hot absolute inset-0 flex items-center"
+          >
+            {names[index]}
+          </motion.span>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
