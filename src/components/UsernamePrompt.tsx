@@ -20,13 +20,16 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
     if (!username.trim()) return;
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({
+    console.log("[GEOGUSHING] Updating username to:", username.trim());
+    const { data, error } = await supabase.auth.updateUser({
       data: { username: username.trim() },
     });
+    console.log("[GEOGUSHING] updateUser result:", { data, error });
 
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
+      toast({ title: "Pseudo enregistré !" });
       onComplete();
     }
     setLoading(false);
