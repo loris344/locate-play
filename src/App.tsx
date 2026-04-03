@@ -54,6 +54,28 @@ function GlobalNav() {
   );
 }
 
+function RequireUsername({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [needsUsername, setNeedsUsername] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!loading && user) {
+      const username = user.user_metadata?.username;
+      setNeedsUsername(!username || username.trim() === '');
+    } else {
+      setNeedsUsername(false);
+    }
+  }, [user, loading]);
+
+  if (loading || needsUsername === null) return null;
+
+  if (needsUsername) {
+    return <UsernamePrompt onComplete={() => setNeedsUsername(false)} />;
+  }
+
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -61,15 +83,17 @@ const App = () => (
         <Toaster />
         <Sonner />
         <HashRouter>
-          <GlobalNav />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/game" element={<GameRoute />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <RequireUsername>
+            <GlobalNav />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/game" element={<GameRoute />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/subscription" element={<Subscription />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RequireUsername>
         </HashRouter>
       </TooltipProvider>
     </AuthProvider>
