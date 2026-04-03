@@ -62,6 +62,8 @@ export default function Index() {
           >
             Watch. Guess. Score. 🌍🔥
           </motion.p>
+
+          <ActorNameTicker />
         </div>
 
         {/* How it works */}
