@@ -5,6 +5,7 @@ import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown, ShieldCheck } from '
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
+import ActorNameTicker from '@/components/ActorNameTicker';
 
 export default function Index() {
   const navigate = useNavigate();
