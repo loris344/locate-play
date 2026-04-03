@@ -20,17 +20,22 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
     if (!username.trim()) return;
     setLoading(true);
 
-    console.log("[GEOGUSHING] Updating username to:", username.trim());
+    const trimmed = username.trim();
+    // Update auth metadata
     const { data, error } = await supabase.auth.updateUser({
-      data: { username: username.trim() },
+      data: { username: trimmed },
     });
-    console.log("[GEOGUSHING] updateUser result:", { data, error });
 
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
+    // Also upsert into profiles table for leaderboard
+    if (!error) {
+      const userId = data.user?.id;
+      if (userId) {
+        await supabase.from('profiles').upsert({ id: userId, username: trimmed });
+      }
       toast({ title: "Pseudo enregistré !" });
       onComplete();
+    } else {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     }
     setLoading(false);
   };
