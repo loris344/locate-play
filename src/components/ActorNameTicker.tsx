@@ -30,7 +30,7 @@ export default function ActorNameTicker() {
   if (names.length === 0) return null;
 
   return (
-    <div className="h-10 flex items-center justify-center overflow-hidden">
+    <div className="h-10 flex items-center justify-center overflow-hidden relative">
       <span className="text-muted-foreground text-lg font-semibold mr-2">Find</span>
       <AnimatePresence mode="wait">
         <motion.span
