@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Navigate, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,6 +14,7 @@ import Leaderboard from "./pages/Leaderboard.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.tsx";
 import { useGameAccess } from "./hooks/useGameAccess";
+import UsernamePrompt from "./components/UsernamePrompt.tsx";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,28 @@ function GlobalNav() {
   );
 }
 
+function RequireUsername({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [needsUsername, setNeedsUsername] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!loading && user) {
+      const username = user.user_metadata?.username;
+      setNeedsUsername(!username || username.trim() === '');
+    } else {
+      setNeedsUsername(false);
+    }
+  }, [user, loading]);
+
+  if (loading || needsUsername === null) return null;
+
+  if (needsUsername) {
+    return <UsernamePrompt onComplete={() => setNeedsUsername(false)} />;
+  }
+
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -60,15 +84,17 @@ const App = () => (
         <Toaster />
         <Sonner />
         <HashRouter>
-          <GlobalNav />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/game" element={<GameRoute />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <RequireUsername>
+            <GlobalNav />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/game" element={<GameRoute />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/subscription" element={<Subscription />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RequireUsername>
         </HashRouter>
       </TooltipProvider>
     </AuthProvider>
