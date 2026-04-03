@@ -31,12 +31,11 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
       const userId = data.user?.id;
       if (userId) {
         await supabase.from('profiles').upsert({ id: userId, username: trimmed });
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
+      }
       toast({ title: "Pseudo enregistré !" });
       onComplete();
+    } else {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     }
     setLoading(false);
   };
