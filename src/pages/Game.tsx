@@ -86,9 +86,13 @@ export default function Game() {
       try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch { seen = []; }
 
       let available = data.filter((v) => !seen.includes(v.id));
-      // All videos have been seen
+      // If not enough unseen videos, reset seen list and retry
       if (available.length < TOTAL_ROUNDS) {
-        setError("You've seen all available videos! New rounds are coming soon 🎬");
+        localStorage.removeItem(seenKey);
+        available = data;
+      }
+      if (available.length < TOTAL_ROUNDS) {
+        setError("Not enough videos available. Come back soon! 🎬");
         setLoading(false);
         return;
       }
