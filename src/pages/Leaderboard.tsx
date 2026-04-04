@@ -49,7 +49,7 @@ export default function Leaderboard() {
           </div>
         ) : (
           <div className="space-y-2">
-            {entries.map((entry, i) => (
+            {entries.slice(0, 10).map((entry, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, x: -20 }}

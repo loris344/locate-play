@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, LogOut, Crown, ShieldCheck } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 import ActorNameTicker from '@/components/ActorNameTicker';
+import UserProfilePopover from '@/components/UserProfilePopover';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -18,13 +19,7 @@ export default function Index() {
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
         {user ? (
           <>
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              {isSubscribed && <Crown className="h-4 w-4 text-yellow-400" />}
-              {user.user_metadata?.username || user.email}
-            </span>
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <UserProfilePopover isSubscribed={isSubscribed} />
           </>
         ) : (
           <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
