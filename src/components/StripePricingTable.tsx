@@ -1,29 +1,26 @@
 import { Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-// TODO: replace these with the real Stripe Payment Link URLs once created
-// in the Stripe Dashboard (Product catalog -> your product -> each price ->
-// Create payment link).
 const PLANS = [
   {
     name: "Weekly",
-    price: "$5.90",
+    price: "$5.99",
     period: "/week",
-    url: "https://buy.stripe.com/REPLACE_WEEKLY",
+    url: "https://buy.stripe.com/00waEQ8AY697ffp7a27EQ02",
   },
   {
     name: "Monthly",
     price: "$14",
     period: "/month",
     badge: "POPULAR",
-    url: "https://buy.stripe.com/REPLACE_MONTHLY",
+    url: "https://buy.stripe.com/eVqfZadVibtrd7h9ia7EQ01",
   },
   {
     name: "Yearly",
     price: "$120",
     period: "/year",
     badge: "BEST VALUE",
-    url: "https://buy.stripe.com/REPLACE_YEARLY",
+    url: "https://buy.stripe.com/00w00cbNa40ZaZ9ame7EQ00",
   },
 ];
 
