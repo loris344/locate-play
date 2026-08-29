@@ -4,11 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Mail, Calendar } from 'lucide-react';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Mail, Calendar, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StripePricingTable from '@/components/StripePricingTable';
 import { useState, useEffect } from 'react';
 import lorisImg from '@/assets/loris.png';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 function ResetCountdown() {
   const [timeLeft, setTimeLeft] = useState('');
@@ -41,6 +43,24 @@ export default function Subscription() {
   const navigate = router.push;
   const { user } = useAuth();
   const { isSubscribed, subscriptionEnd, planLabel, gamesPlayedToday, loading } = useGameAccess();
+  const { toast } = useToast();
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  const handleManageSubscription = async () => {
+    setOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-portal');
+      if (error || !data?.url) throw error || new Error('Could not open the billing portal');
+      window.location.href = data.url;
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Could not open the billing portal',
+        variant: 'destructive',
+      });
+      setOpeningPortal(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -118,6 +138,18 @@ export default function Subscription() {
           </div>
           {!isSubscribed && gamesPlayedToday >= 2 && <ResetCountdown />}
         </motion.div>
+
+        {isSubscribed && (
+          <Button
+            onClick={handleManageSubscription}
+            disabled={openingPortal}
+            variant="outline"
+            className="w-full font-bold"
+          >
+            {openingPortal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Settings className="mr-2 h-4 w-4" />}
+            Manage / Cancel Subscription
+          </Button>
+        )}
 
         {/* Pricing table if not subscribed */}
         {!isSubscribed && (
