@@ -32,8 +32,16 @@ async function upsertFromSubscription(
   subscription: Stripe.Subscription,
   userId?: string | null,
 ) {
-  const price = subscription.items.data[0]?.price;
-  const expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
+  const item = subscription.items.data[0];
+  const price = item?.price;
+  // Stripe moved current_period_end from the subscription itself down to
+  // the subscription item as part of its 2025 Billing API changes; read
+  // both spots so this keeps working regardless of the account's API
+  // version (webhook payloads are shaped by the account/endpoint version,
+  // not by the apiVersion this SDK client was created with).
+  const periodEnd = (item as unknown as { current_period_end?: number })?.current_period_end
+    ?? (subscription as unknown as { current_period_end?: number }).current_period_end;
+  const expiresAt = periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
   const status = ["active", "trialing"].includes(subscription.status) ? "active" : "inactive";
 
   const row = {

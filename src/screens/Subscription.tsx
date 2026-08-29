@@ -42,7 +42,7 @@ export default function Subscription() {
   const router = useRouter();
   const navigate = router.push;
   const { user } = useAuth();
-  const { isSubscribed, subscriptionEnd, planLabel, gamesPlayedToday, loading } = useGameAccess();
+  const { isSubscribed, subscriptionEnd, cancelAt, planLabel, gamesPlayedToday, loading } = useGameAccess();
   const { toast } = useToast();
   const [openingPortal, setOpeningPortal] = useState(false);
 
@@ -103,12 +103,16 @@ export default function Subscription() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className={`rounded-xl border-2 p-6 space-y-3 ${
-            isSubscribed ? 'border-green-500 bg-green-500/10' : 'border-border bg-card'
+            isSubscribed
+              ? cancelAt
+                ? 'border-yellow-500 bg-yellow-500/10'
+                : 'border-green-500 bg-green-500/10'
+              : 'border-border bg-card'
           }`}
         >
           <div className="flex items-center gap-3">
             {isSubscribed ? (
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className={`w-8 h-8 ${cancelAt ? 'text-yellow-500' : 'text-green-500'}`} />
             ) : (
               <XCircle className="w-8 h-8 text-muted-foreground" />
             )}
@@ -118,9 +122,11 @@ export default function Subscription() {
               </p>
               <p className="text-sm text-muted-foreground">
                 {isSubscribed
-                  ? subscriptionEnd
-                    ? `Unlimited games • Renews ${new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-                    : 'Unlimited games'
+                  ? cancelAt
+                    ? `Unlimited games • Cancels ${new Date(cancelAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                    : subscriptionEnd
+                      ? `Unlimited games • Renews ${new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                      : 'Unlimited games'
                   : gamesPlayedToday >= 2
                     ? `Daily free limit reached (${Math.min(gamesPlayedToday, 2)}/2).`
                     : `${gamesPlayedToday}/2 free daily games used`}

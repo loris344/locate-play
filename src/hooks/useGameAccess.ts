@@ -14,6 +14,7 @@ interface GameAccess {
   gamesPlayedToday: number;
   isSubscribed: boolean;
   subscriptionEnd: string | null;
+  cancelAt: string | null;
   planLabel: string | null;
   recordGamePlayed: () => void;
 }
@@ -71,6 +72,7 @@ export function useGameAccess(): GameAccess {
   const [gamesPlayedToday, setGamesPlayedToday] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [cancelAt, setCancelAt] = useState<string | null>(null);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,6 +105,7 @@ export function useGameAccess(): GameAccess {
 
       setIsSubscribed(subscribed);
       setSubscriptionEnd(sub?.expires_at || null);
+      setCancelAt(sub?.cancel_at || null);
 
       // Detect plan label from column or deduce from created_at/expires_at
       if (subscribed && sub) {
@@ -189,5 +192,5 @@ export function useGameAccess(): GameAccess {
     setGamesPlayedToday(prev => Math.max(prev + 1, localCount));
   };
 
-  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, planLabel, recordGamePlayed };
+  return { canPlay, reason, loading, gamesPlayedToday, isSubscribed, subscriptionEnd, cancelAt, planLabel, recordGamePlayed };
 }
