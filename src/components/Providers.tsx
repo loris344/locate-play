@@ -12,8 +12,10 @@ import { Crown } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import UsernamePrompt from "@/components/UsernamePrompt";
 
+const POSTHOG_API_KEY = "phc_BCTmCtP8J4v5nPCefD33TskxTSGhFfiJHmwAvddPVbvK";
+
 const posthogOptions = {
-  api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  api_host: "https://eu.i.posthog.com",
   defaults: "2026-05-30",
 } as const;
 
@@ -63,7 +65,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <PostHogProvider apiKey={process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!} options={posthogOptions}>
+    <PostHogProvider apiKey={POSTHOG_API_KEY} options={posthogOptions}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
