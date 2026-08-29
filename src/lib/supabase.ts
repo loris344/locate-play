@@ -24,4 +24,5 @@ export interface Profile {
   instagram_handle: string | null;
   facebook_handle: string | null;
   show_social: boolean;
+  username_updated_at: string | null;
 }

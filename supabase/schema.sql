@@ -11,6 +11,7 @@ create table if not exists public.profiles (
   instagram_handle text,
   facebook_handle text,
   show_social boolean not null default false,
+  username_updated_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -18,8 +19,32 @@ alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists instagram_handle text;
 alter table public.profiles add column if not exists facebook_handle text;
 alter table public.profiles add column if not exists show_social boolean not null default false;
+alter table public.profiles add column if not exists username_updated_at timestamptz;
 
 alter table public.profiles enable row level security;
+
+-- Username changes are limited to once every 30 days, enforced here so it
+-- can't be bypassed by calling the API directly.
+create or replace function public.enforce_username_cooldown()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.username is distinct from old.username then
+    if old.username_updated_at is not null and old.username_updated_at > now() - interval '30 days' then
+      raise exception 'You can only change your username once every 30 days';
+    end if;
+    new.username_updated_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_username_cooldown on public.profiles;
+create trigger trg_username_cooldown
+  before update on public.profiles
+  for each row
+  execute function public.enforce_username_cooldown();
 
 create policy "Profiles are viewable by everyone"
   on public.profiles for select

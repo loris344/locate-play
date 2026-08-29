@@ -21,6 +21,8 @@ interface Stats {
   games_played: number;
 }
 
+const USERNAME_COOLDOWN_DAYS = 30;
+
 export default function Account() {
   const router = useRouter();
   const { user } = useAuth();
@@ -28,12 +30,14 @@ export default function Account() {
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [usernameInput, setUsernameInput] = useState("");
   const [instagram, setInstagram] = useState("");
   const [facebook, setFacebook] = useState("");
   const [showSocial, setShowSocial] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +52,7 @@ export default function Account() {
 
       if (profileData) {
         setProfile(profileData as Profile);
+        setUsernameInput(profileData.username || "");
         setInstagram(profileData.instagram_handle || "");
         setFacebook(profileData.facebook_handle || "");
         setShowSocial(!!profileData.show_social);
@@ -85,7 +90,13 @@ export default function Account() {
     );
   }
 
-  const username = user.user_metadata?.username || "Player";
+  const username = profile?.username || user.user_metadata?.username || "Player";
+
+  const lastUsernameChange = profile?.username_updated_at ? new Date(profile.username_updated_at) : null;
+  const nextUsernameChangeAt = lastUsernameChange
+    ? new Date(lastUsernameChange.getTime() + USERNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000)
+    : null;
+  const canChangeUsername = !nextUsernameChangeAt || nextUsernameChangeAt.getTime() <= Date.now();
 
   const handleAvatarPick = () => fileInputRef.current?.click();
 
@@ -122,6 +133,36 @@ export default function Account() {
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleUsernameSave = async () => {
+    const trimmed = usernameInput.trim();
+    if (!trimmed || trimmed === profile?.username) return;
+
+    setSavingUsername(true);
+    try {
+      const { error: authError } = await supabase.auth.updateUser({ data: { username: trimmed } });
+      if (authError) throw authError;
+
+      const { data: updated, error: dbError } = await supabase
+        .from("profiles")
+        .update({ username: trimmed })
+        .eq("id", user.id)
+        .select()
+        .single();
+      if (dbError) throw dbError;
+
+      setProfile(updated as Profile);
+      toast({ title: "Username updated!" });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Could not update username",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingUsername(false);
     }
   };
 
@@ -210,6 +251,34 @@ export default function Account() {
                 </p>
                 <p className="text-[10px] text-muted-foreground">Plan</p>
               </div>
+            </div>
+
+            {/* Username */}
+            <div className="bg-card border border-border rounded-lg p-6 space-y-3">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                minLength={2}
+                maxLength={20}
+                disabled={!canChangeUsername}
+                className="bg-muted border-border"
+              />
+              <p className="text-xs text-muted-foreground">
+                {canChangeUsername
+                  ? "You can change your username once every 30 days."
+                  : `You can change it again on ${nextUsernameChangeAt?.toLocaleDateString()}.`}
+              </p>
+              <Button
+                onClick={handleUsernameSave}
+                disabled={!canChangeUsername || savingUsername || !usernameInput.trim() || usernameInput.trim() === profile?.username}
+                variant="outline"
+                className="w-full font-bold"
+              >
+                {savingUsername && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                SAVE USERNAME
+              </Button>
             </div>
 
             {/* Social links */}
