@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Trophy, ArrowLeft, Loader2, Instagram, Facebook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 interface LeaderboardEntry {
   username: string;
@@ -23,6 +24,7 @@ export default function Leaderboard() {
   const navigate = router.push;
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedAvatar, setExpandedAvatar] = useState<{ url: string; username: string } | null>(null);
 
   useEffect(() => {
     async function fetchScores() {
@@ -75,12 +77,18 @@ export default function Leaderboard() {
                 }`}>
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
                 </span>
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarImage src={entry.avatar_url || undefined} alt={entry.username} />
-                  <AvatarFallback className="text-xs font-black">
-                    {entry.username.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <button
+                  onClick={() => entry.avatar_url && setExpandedAvatar({ url: entry.avatar_url, username: entry.username })}
+                  className={`shrink-0 rounded-full ${entry.avatar_url ? 'cursor-pointer hover:ring-2 hover:ring-primary transition-shadow' : 'cursor-default'}`}
+                  disabled={!entry.avatar_url}
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={entry.avatar_url || undefined} alt={entry.username} />
+                    <AvatarFallback className="text-sm font-black">
+                      {entry.username.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-foreground truncate">{entry.username}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -121,6 +129,19 @@ export default function Leaderboard() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!expandedAvatar} onOpenChange={(open) => !open && setExpandedAvatar(null)}>
+        <DialogContent className="max-w-sm border-none bg-transparent p-0 shadow-none">
+          <DialogTitle className="sr-only">{expandedAvatar?.username}&apos;s photo</DialogTitle>
+          {expandedAvatar && (
+            <img
+              src={expandedAvatar.url}
+              alt={expandedAvatar.username}
+              className="w-full aspect-square rounded-lg object-cover"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
