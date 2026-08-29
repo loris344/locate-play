@@ -69,14 +69,14 @@ export default function Account() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card border border-border rounded-lg p-8 text-center max-w-md space-y-4">
           <User className="w-12 h-12 text-secondary mx-auto" />
-          <h2 className="text-2xl font-black text-gradient-hot">CONNEXION REQUISE</h2>
-          <p className="text-muted-foreground">Connecte-toi pour gérer ton compte.</p>
+          <h2 className="text-2xl font-black text-gradient-hot">SIGN IN REQUIRED</h2>
+          <p className="text-muted-foreground">Sign in to manage your account.</p>
           <div className="flex gap-3 justify-center">
             <Button onClick={() => router.push("/auth?redirect=/account")} className="bg-gradient-hot font-bold">
-              Se connecter
+              Sign In
             </Button>
             <Button onClick={() => router.push("/")} variant="outline">
-              Accueil
+              Home
             </Button>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function Account() {
     );
   }
 
-  const username = user.user_metadata?.username || "Joueur";
+  const username = user.user_metadata?.username || "Player";
 
   const handleAvatarPick = () => fileInputRef.current?.click();
 
@@ -112,11 +112,11 @@ export default function Account() {
       if (dbError) throw dbError;
 
       setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : prev));
-      toast({ title: "Photo mise à jour !" });
+      toast({ title: "Photo updated!" });
     } catch (err) {
       toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Upload impossible",
+        title: "Error",
+        description: err instanceof Error ? err.message : "Upload failed",
         variant: "destructive",
       });
     } finally {
@@ -136,9 +136,9 @@ export default function Account() {
     setSaving(false);
 
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profil enregistré !" });
+      toast({ title: "Profile saved!" });
     }
   };
 
@@ -149,7 +149,7 @@ export default function Account() {
           <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-black text-gradient-hot">MON COMPTE</h1>
+          <h1 className="text-3xl font-black text-gradient-hot">MY ACCOUNT</h1>
         </div>
 
         {loading ? (
@@ -200,12 +200,12 @@ export default function Account() {
               <div className="bg-muted rounded-lg p-3 text-center">
                 <Gamepad2 className="h-4 w-4 text-primary mx-auto mb-1" />
                 <p className="text-lg font-black text-foreground">{stats?.games_played ?? "—"}</p>
-                <p className="text-[10px] text-muted-foreground">Parties</p>
+                <p className="text-[10px] text-muted-foreground">Games</p>
               </div>
               <div className="bg-muted rounded-lg p-3 text-center">
                 <Crown className="h-4 w-4 text-yellow-400 mx-auto mb-1" />
                 <p className="text-sm font-black text-foreground truncate">
-                  {gameAccess.isSubscribed ? gameAccess.planLabel || "Premium" : "Gratuit"}
+                  {gameAccess.isSubscribed ? gameAccess.planLabel || "Premium" : "Free"}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Plan</p>
               </div>
@@ -217,7 +217,7 @@ export default function Account() {
                 <Label htmlFor="instagram">Instagram</Label>
                 <Input
                   id="instagram"
-                  placeholder="@tonpseudo"
+                  placeholder="@yourhandle"
                   value={instagram}
                   onChange={(e) => setInstagram(e.target.value)}
                   className="bg-muted border-border"
@@ -227,7 +227,7 @@ export default function Account() {
                 <Label htmlFor="facebook">Facebook</Label>
                 <Input
                   id="facebook"
-                  placeholder="facebook.com/tonpseudo"
+                  placeholder="facebook.com/yourhandle"
                   value={facebook}
                   onChange={(e) => setFacebook(e.target.value)}
                   className="bg-muted border-border"
@@ -235,14 +235,14 @@ export default function Account() {
               </div>
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="text-sm font-bold text-foreground">Afficher sur le leaderboard</p>
-                  <p className="text-xs text-muted-foreground">Tes liens sociaux seront visibles publiquement</p>
+                  <p className="text-sm font-bold text-foreground">Show on leaderboard</p>
+                  <p className="text-xs text-muted-foreground">Your social links will be publicly visible</p>
                 </div>
                 <Switch checked={showSocial} onCheckedChange={setShowSocial} />
               </div>
               <Button onClick={handleSave} disabled={saving} className="w-full bg-gradient-hot font-black">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                ENREGISTRER
+                SAVE
               </Button>
             </div>
           </motion.div>

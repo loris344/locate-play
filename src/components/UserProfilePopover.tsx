@@ -18,7 +18,7 @@ export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boo
   const [stats, setStats] = useState<UserStats | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  const username = user?.user_metadata?.username || user?.email || 'Joueur';
+  const username = user?.user_metadata?.username || user?.email || 'Player';
 
   useEffect(() => {
     if (!user) return;
@@ -84,10 +84,10 @@ export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boo
           </div>
         </div>
         <Button variant="ghost" size="sm" className="w-full" onClick={() => router.push('/account')}>
-          <Settings className="h-4 w-4 mr-2" /> Mon compte
+          <Settings className="h-4 w-4 mr-2" /> My Account
         </Button>
         <Button variant="ghost" size="sm" className="w-full" onClick={signOut}>
-          <LogOut className="h-4 w-4 mr-2" /> Déconnexion
+          <LogOut className="h-4 w-4 mr-2" /> Sign Out
         </Button>
       </PopoverContent>
     </Popover>

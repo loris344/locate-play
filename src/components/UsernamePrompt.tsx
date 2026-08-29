@@ -32,10 +32,10 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
       if (userId) {
         await supabase.from('profiles').upsert({ id: userId, username: trimmed });
       }
-      toast({ title: "Pseudo enregistré !" });
+      toast({ title: "Username saved!" });
       onComplete();
     } else {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
     setLoading(false);
   };
@@ -45,13 +45,13 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-black text-gradient-hot">GEOGUSHING</h1>
-          <p className="text-muted-foreground text-sm">Choisis ton pseudo pour le classement</p>
+          <p className="text-muted-foreground text-sm">Choose your username for the leaderboard</p>
         </div>
 
         <div className="bg-card border border-border rounded-lg p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              placeholder="Ton pseudo"
+              placeholder="Your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -62,7 +62,7 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
             />
             <Button type="submit" disabled={loading || !username.trim()} className="w-full bg-gradient-hot font-black">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              C'EST PARTI !
+              LET'S GO!
             </Button>
           </form>
         </div>
