@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
 interface VideoPlayerProps {
@@ -40,6 +40,24 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
       setMuted(videoRef.current.muted);
     }
   };
+
+  // Safari/WebKit refuses to honor the declarative `autoplay` attribute on a
+  // freshly mounted <video> once it's unmuted, even after the page already
+  // has playback permission — but it does accept a scripted play() call. So
+  // once the user has unmuted once, kick playback manually on every new round.
+  useEffect(() => {
+    if (source.type !== 'video') return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.play().catch(() => {
+      if (!video.muted) {
+        video.muted = true;
+        setMuted(true);
+        video.play().catch(() => {});
+      }
+    });
+  }, [source.src, source.type]);
 
   return (
     <div className="overflow-hidden rounded-lg border-2 border-border bg-card shadow-neon">
