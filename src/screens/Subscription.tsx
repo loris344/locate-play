@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Mail, Calendar, Settings } from 'lucide-react';
+import { ArrowLeft, Crown, CheckCircle, XCircle, Loader2, Clock, Mail, Calendar, Settings, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StripePricingTable from '@/components/StripePricingTable';
 import { useState, useEffect } from 'react';
@@ -44,12 +44,12 @@ export default function Subscription() {
   const { user } = useAuth();
   const { isSubscribed, subscriptionEnd, cancelAt, planLabel, gamesPlayedToday, loading } = useGameAccess();
   const { toast } = useToast();
-  const [openingPortal, setOpeningPortal] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState<'update' | 'cancel' | null>(null);
 
-  const handleManageSubscription = async () => {
-    setOpeningPortal(true);
+  const handleManageSubscription = async (flow: 'update' | 'cancel') => {
+    setOpeningPortal(flow);
     try {
-      const { data, error } = await supabase.functions.invoke('stripe-portal');
+      const { data, error } = await supabase.functions.invoke('stripe-portal', { body: { flow } });
       if (error || !data?.url) throw error || new Error('Could not open the billing portal');
       window.location.href = data.url;
     } catch (err) {
@@ -58,7 +58,7 @@ export default function Subscription() {
         description: err instanceof Error ? err.message : 'Could not open the billing portal',
         variant: 'destructive',
       });
-      setOpeningPortal(false);
+      setOpeningPortal(null);
     }
   };
 
@@ -146,15 +146,26 @@ export default function Subscription() {
         </motion.div>
 
         {isSubscribed && (
-          <Button
-            onClick={handleManageSubscription}
-            disabled={openingPortal}
-            variant="outline"
-            className="w-full font-bold"
-          >
-            {openingPortal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Settings className="mr-2 h-4 w-4" />}
-            Manage / Cancel Subscription
-          </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={() => handleManageSubscription('update')}
+              disabled={openingPortal !== null}
+              variant="outline"
+              className="font-bold"
+            >
+              {openingPortal === 'update' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Settings className="mr-2 h-4 w-4" />}
+              Change Plan
+            </Button>
+            <Button
+              onClick={() => handleManageSubscription('cancel')}
+              disabled={openingPortal !== null}
+              variant="outline"
+              className="font-bold text-destructive hover:text-destructive"
+            >
+              {openingPortal === 'cancel' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
+              Cancel Subscription
+            </Button>
+          </div>
         )}
 
         {/* Pricing table if not subscribed */}

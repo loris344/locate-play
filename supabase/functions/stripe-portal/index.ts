@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
 
   const { data: sub, error: subError } = await supabase
     .from("subscriptions")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, stripe_subscription_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -52,9 +52,35 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "No Stripe customer on file for this account" }), { status: 404, headers: jsonHeaders });
   }
 
+  // Optional { flow: "update" | "cancel" } body deep-links straight into the
+  // matching Billing Portal screen instead of dropping the user on the
+  // generic overview (requires that flow to be enabled in the Stripe
+  // dashboard's portal configuration).
+  let flow: string | undefined;
+  try {
+    const body = await req.json();
+    flow = body?.flow;
+  } catch {
+    // no body sent — fall back to the generic portal
+  }
+
+  let flowData: Stripe.BillingPortal.SessionCreateParams.FlowData | undefined;
+  if (sub.stripe_subscription_id && flow === "update") {
+    flowData = {
+      type: "subscription_update",
+      subscription_update: { subscription: sub.stripe_subscription_id },
+    };
+  } else if (sub.stripe_subscription_id && flow === "cancel") {
+    flowData = {
+      type: "subscription_cancel",
+      subscription_cancel: { subscription: sub.stripe_subscription_id },
+    };
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripe_customer_id,
     return_url: RETURN_URL,
+    ...(flowData ? { flow_data: flowData } : {}),
   });
 
   return new Response(JSON.stringify({ url: session.url }), { headers: jsonHeaders });
