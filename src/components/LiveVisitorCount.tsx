@@ -34,22 +34,46 @@ function clamp(value: number) {
   return Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, value));
 }
 
+// Weighted so most seconds are quiet (no change, or ±1), with the occasional
+// bigger swing — closer to how a real concurrent-user count actually moves.
+function randomStep() {
+  const r = Math.random();
+  if (r < 0.3) return 0;
+  if (r < 0.5) return 1;
+  if (r < 0.7) return -1;
+  if (r < 0.82) return 2;
+  if (r < 0.94) return -2;
+  if (r < 0.98) return 3;
+  return -3;
+}
+
 export default function LiveVisitorCount() {
   const [count, setCount] = useState(MIN_PLAYERS);
   const countRef = useRef(count);
 
   useEffect(() => {
-    const tick = () => {
+    // Seed immediately at the realistic value for "right now" rather than easing into it.
+    const seeded = Math.round(baseCountForNow());
+    countRef.current = seeded;
+    setCount(seeded);
+
+    const interval = setInterval(() => {
       const base = baseCountForNow();
-      const drift = (base - countRef.current) * 0.05;
-      const noise = (Math.random() - 0.5) * 50;
-      const next = Math.round(clamp(countRef.current + drift + noise));
+      const current = countRef.current;
+      const diff = base - current;
+
+      let step = randomStep();
+      // Only occasionally nudge toward the time-of-day baseline, so the
+      // count drifts there over minutes instead of ticking the same way every second.
+      if (diff !== 0 && Math.random() < 0.3) {
+        step += Math.sign(diff);
+      }
+
+      const next = clamp(current + step);
       countRef.current = next;
       setCount(next);
-    };
+    }, 1000);
 
-    tick();
-    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, []);
 
