@@ -43,19 +43,20 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
 
   // Safari/WebKit refuses to honor the declarative `autoplay` attribute on a
   // freshly mounted <video> once it's unmuted, even after the page already
-  // has playback permission — but it does accept a scripted play() call. So
-  // once the user has unmuted once, kick playback manually on every new round.
+  // has playback permission — but it does accept a scripted play() call. Only
+  // step in for that unmuted case: the muted case (every round until the user
+  // unmutes) is left entirely to the native `autoplay` attribute, since
+  // racing it with a redundant manual play() call here caused autoplay to
+  // silently fail on some mobile browsers/networks.
   useEffect(() => {
     if (source.type !== 'video') return;
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || video.muted) return;
 
     video.play().catch(() => {
-      if (!video.muted) {
-        video.muted = true;
-        setMuted(true);
-        video.play().catch(() => {});
-      }
+      video.muted = true;
+      setMuted(true);
+      video.play().catch(() => {});
     });
   }, [source.src, source.type]);
 
