@@ -1,14 +1,14 @@
-// Switches the signed-in user's subscription to a different billing
-// interval (week/month/year) in place, instead of sending them through
-// Stripe Checkout again — which would just create a second, separate
-// subscription rather than replacing the existing one.
+// Switches the signed-in user's subscription to a different plan in
+// place, instead of sending them through Stripe Checkout again — which
+// would just create a second, separate subscription rather than
+// replacing the existing one.
 // Deploy: supabase functions deploy stripe-change-plan
 //
-// Assumes the weekly/monthly/yearly plans are three recurring Prices on
-// the SAME Stripe Product (this is what the account is set up as: see
-// stripe-webhook's planFromInterval, which already treats the recurring
-// interval as the plan identity). If that ever changes, the price lookup
-// below needs to change too.
+// Weekly/Monthly/Yearly are three separate Stripe Products (not three
+// Prices on one Product), so the target price can't be found by listing
+// prices on the current subscription's product. Instead we resolve each
+// plan's price the same way the pricing page identifies it: via its
+// Payment Link URL (kept in sync with src/components/StripePricingTable.tsx).
 
 import Stripe from "https://esm.sh/stripe@17.4.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -23,7 +23,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VALID_INTERVALS = new Set(["week", "month", "year"]);
+// Keep in sync with the `url` fields in src/components/StripePricingTable.tsx.
+const PAYMENT_LINK_URLS: Record<string, string> = {
+  week: "https://buy.stripe.com/00waEQ8AY697ffp7a27EQ02",
+  month: "https://buy.stripe.com/eVqfZadVibtrd7h9ia7EQ01",
+  year: "https://buy.stripe.com/00w00cbNa40ZaZ9ame7EQ00",
+};
+
+async function priceIdForInterval(interval: string): Promise<string | null> {
+  const url = PAYMENT_LINK_URLS[interval];
+  if (!url) return null;
+
+  const links = await stripe.paymentLinks.list({ limit: 100 });
+  const link = links.data.find((l) => l.url === url);
+  if (!link) return null;
+
+  const lineItems = await stripe.paymentLinks.listLineItems(link.id, { limit: 1 });
+  const price = lineItems.data[0]?.price;
+  if (!price) return null;
+  return typeof price === "string" ? price : price.id;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,7 +57,7 @@ Deno.serve(async (req) => {
   }
 
   const { interval } = await req.json().catch(() => ({ interval: undefined }));
-  if (typeof interval !== "string" || !VALID_INTERVALS.has(interval)) {
+  if (typeof interval !== "string" || !PAYMENT_LINK_URLS[interval]) {
     return new Response(JSON.stringify({ error: "Invalid plan" }), { status: 400, headers: jsonHeaders });
   }
 
@@ -69,20 +88,17 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "Subscription has no billing item" }), { status: 400, headers: jsonHeaders });
   }
 
-  if (item.price.recurring?.interval === interval) {
-    return new Response(JSON.stringify({ error: "Already on this plan" }), { status: 400, headers: jsonHeaders });
-  }
-
-  const productId = typeof item.price.product === "string" ? item.price.product : item.price.product.id;
-  const prices = await stripe.prices.list({ product: productId, active: true, type: "recurring" });
-  const targetPrice = prices.data.find((p) => p.recurring?.interval === interval);
-
-  if (!targetPrice) {
+  const targetPriceId = await priceIdForInterval(interval);
+  if (!targetPriceId) {
     return new Response(JSON.stringify({ error: "That plan is not available" }), { status: 404, headers: jsonHeaders });
   }
 
+  if (item.price.id === targetPriceId) {
+    return new Response(JSON.stringify({ error: "Already on this plan" }), { status: 400, headers: jsonHeaders });
+  }
+
   await stripe.subscriptions.update(sub.stripe_subscription_id, {
-    items: [{ id: item.id, price: targetPrice.id }],
+    items: [{ id: item.id, price: targetPriceId }],
     proration_behavior: "create_prorations",
   });
 
