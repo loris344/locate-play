@@ -13,8 +13,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import UsernamePrompt from "@/components/UsernamePrompt";
 
 const posthogOptions = {
-  api_host: "https://eu.i.posthog.com",
-  defaults: "2026-01-30",
+  api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  defaults: "2026-05-30",
 } as const;
 
 function GlobalNav() {
@@ -63,7 +63,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <PostHogProvider apiKey="phc_zqsqppb6V2aEsBkYWEdXh5LU9dXvUsAUBpHKcpEH3tC8" options={posthogOptions}>
+    <PostHogProvider apiKey={process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!} options={posthogOptions}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
