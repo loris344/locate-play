@@ -48,6 +48,7 @@ async function upsertFromSubscription(
     status,
     plan: planFromInterval(price?.recurring?.interval),
     expires_at: expiresAt,
+    cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
     stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
   };
