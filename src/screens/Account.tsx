@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Gamepad2, Loader2, Mail, Trophy, Upload, User } from "lucide-react";
+import { ArrowLeft, Check, Crown, Gamepad2, Loader2, Mail, Pencil, Trophy, Upload, User, X } from "lucide-react";
 import lorisImg from "@/assets/loris.png";
 import { supabase, Profile } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +38,7 @@ export default function Account() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingUsername, setSavingUsername] = useState(false);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,6 +101,23 @@ export default function Account() {
 
   const handleAvatarPick = () => fileInputRef.current?.click();
 
+  const handleEditUsernameClick = () => {
+    if (!canChangeUsername) {
+      toast({
+        title: "Username locked",
+        description: `You can change it again on ${nextUsernameChangeAt?.toLocaleDateString()}.`,
+      });
+      return;
+    }
+    setUsernameInput(username);
+    setIsEditingUsername(true);
+  };
+
+  const handleCancelUsernameEdit = () => {
+    setUsernameInput(username);
+    setIsEditingUsername(false);
+  };
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -154,6 +172,7 @@ export default function Account() {
       if (dbError) throw dbError;
 
       setProfile(updated as Profile);
+      setIsEditingUsername(false);
       toast({ title: "Username updated!" });
     } catch (err) {
       toast({
@@ -224,8 +243,42 @@ export default function Account() {
                 className="hidden"
                 onChange={handleAvatarChange}
               />
-              <div className="min-w-0">
-                <p className="font-bold text-foreground truncate">{username}</p>
+              <div className="min-w-0 flex-1">
+                {isEditingUsername ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      autoFocus
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value)}
+                      minLength={2}
+                      maxLength={20}
+                      className="h-8 bg-muted border-border font-bold"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleUsernameSave();
+                        if (e.key === "Escape") handleCancelUsernameEdit();
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 shrink-0"
+                      disabled={savingUsername || !usernameInput.trim() || usernameInput.trim() === profile?.username}
+                      onClick={handleUsernameSave}
+                    >
+                      {savingUsername ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={handleCancelUsernameEdit}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-foreground truncate">{username}</p>
+                    <button onClick={handleEditUsernameClick} className="text-muted-foreground hover:text-foreground shrink-0">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground truncate">{user.email}</p>
               </div>
             </div>
@@ -251,34 +304,6 @@ export default function Account() {
                 </p>
                 <p className="text-[10px] text-muted-foreground">Plan</p>
               </div>
-            </div>
-
-            {/* Username */}
-            <div className="bg-card border border-border rounded-lg p-6 space-y-3">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
-                minLength={2}
-                maxLength={20}
-                disabled={!canChangeUsername}
-                className="bg-muted border-border"
-              />
-              <p className="text-xs text-muted-foreground">
-                {canChangeUsername
-                  ? "You can change your username once every 30 days."
-                  : `You can change it again on ${nextUsernameChangeAt?.toLocaleDateString()}.`}
-              </p>
-              <Button
-                onClick={handleUsernameSave}
-                disabled={!canChangeUsername || savingUsername || !usernameInput.trim() || usernameInput.trim() === profile?.username}
-                variant="outline"
-                className="w-full font-bold"
-              >
-                {savingUsername && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                SAVE USERNAME
-              </Button>
             </div>
 
             {/* Social links */}
