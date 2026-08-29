@@ -1,6 +1,8 @@
+"use client";
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Trophy, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +15,8 @@ interface LeaderboardEntry {
 }
 
 export default function Leaderboard() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = router.push;
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 

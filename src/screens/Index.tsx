@@ -1,5 +1,7 @@
+"use client";
+
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +11,8 @@ import ActorNameTicker from '@/components/ActorNameTicker';
 import UserProfilePopover from '@/components/UserProfilePopover';
 
 export default function Index() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = router.push;
   const { user, signOut } = useAuth();
   const { isSubscribed } = useGameAccess();
 
@@ -90,7 +93,7 @@ export default function Index() {
           className="flex gap-3"
         >
           <Button
-            onClick={() => navigate('/game')}
+            onClick={() => navigate('/play')}
             size="lg"
             className="bg-gradient-hot font-black text-xl px-12 py-6 h-auto shadow-glow animate-pulse-glow hover:scale-105 transition-transform"
           >

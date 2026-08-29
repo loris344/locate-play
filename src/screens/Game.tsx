@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, Video } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,28 +15,14 @@ import RoundIntro from "@/components/RoundIntro";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2, Crown, ExternalLink } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import { haversineDistance, calculateScore } from "@/lib/scoring";
 
 const TOTAL_ROUNDS = 5;
-const MAX_SCORE_PER_ROUND = 5000;
-
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function calculateScore(distance: number): number {
-  if (distance < 25) return MAX_SCORE_PER_ROUND;
-  return Math.max(0, Math.round(MAX_SCORE_PER_ROUND * Math.exp(-distance / 500)));
-}
 
 export default function Game() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = router.push;
   const { user } = useAuth();
   const gameAccess = useGameAccess();
   const [videos, setVideos] = useState<Video[]>([]);
@@ -238,7 +226,7 @@ export default function Game() {
             <div className="space-y-4">
               <p className="text-muted-foreground">You've used your free game! Sign up to keep playing (2 free games per day).</p>
               <div className="flex gap-3 justify-center">
-                <Button onClick={() => navigate("/auth?redirect=/game")} className="bg-gradient-hot font-bold">
+                <Button onClick={() => navigate("/auth?redirect=/play")} className="bg-gradient-hot font-bold">
                   Sign Up
                 </Button>
                 <Button onClick={() => navigate("/")} variant="outline">

@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from 'react';
 
 interface GameMapProps {
@@ -17,7 +19,7 @@ const DEFAULT_CENTER = { lat: 20, lng: 0 };
 const DEFAULT_ZOOM = 2;
 const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-script';
 const GOOGLE_MAPS_API_KEY =
-  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyCc89CKlNNcOhvrUIrCmAB4app2WoFM1Q8';
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyCc89CKlNNcOhvrUIrCmAB4app2WoFM1Q8';
 
 let googleMapsPromise: Promise<any> | null = null;
 

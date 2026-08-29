@@ -60,7 +60,7 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
               key={source.src}
               src={source.src}
               autoPlay
-              muted
+              muted={muted}
               controls
               playsInline
               loop

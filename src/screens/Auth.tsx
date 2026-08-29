@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { useNavigate } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +11,9 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const navigate = router.push;
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
@@ -18,20 +22,13 @@ export default function Auth() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // With HashRouter, query params are after the hash: /#/auth?redirect=/game
-  const getRedirect = () => {
-    const hash = window.location.hash; // e.g. #/auth?redirect=/game
-    const qIndex = hash.indexOf('?');
-    if (qIndex === -1) return '/';
-    const params = new URLSearchParams(hash.slice(qIndex));
-    return params.get('redirect') || '/';
-  };
+  const getRedirect = () => searchParams.get('redirect') || '/';
 
   useEffect(() => {
     if (user) {
-      navigate(getRedirect(), { replace: true });
+      router.replace(getRedirect());
     }
-  }, [user, navigate]);
+  }, [user, router]);
 
   if (user) return null;
 

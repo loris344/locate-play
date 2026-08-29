@@ -1,4 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+"use client";
+
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import { motion } from 'framer-motion';
@@ -35,7 +37,8 @@ function ResetCountdown() {
 }
 
 export default function Subscription() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = router.push;
   const { user } = useAuth();
   const { isSubscribed, subscriptionEnd, planLabel, gamesPlayedToday, loading } = useGameAccess();
 
@@ -143,7 +146,7 @@ export default function Subscription() {
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mx-auto w-fit text-xs"
           >
-            <img src={lorisImg} alt="" className="w-7 h-7 rounded-full object-cover" />
+            <img src={lorisImg.src} alt="" className="w-7 h-7 rounded-full object-cover" />
             <span>Bug or question?</span>
             <MessageCircle className="w-3.5 h-3.5" />
           </a>

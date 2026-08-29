@@ -1,6 +1,8 @@
+"use client";
+
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Lock, LogIn } from 'lucide-react';
 import StripePricingTable from '@/components/StripePricingTable';
 
@@ -9,7 +11,8 @@ interface StripePaywallProps {
 }
 
 export default function StripePaywall({ reason }: StripePaywallProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = router.push;
 
   if (reason === 'signin_required') {
     return (
@@ -25,7 +28,7 @@ export default function StripePaywall({ reason }: StripePaywallProps) {
             You've used your free game! Sign up to keep playing (2 free games per day).
           </p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => navigate('/auth?redirect=/game')} className="bg-gradient-hot font-black text-lg px-8 py-3 h-auto">
+            <Button onClick={() => navigate('/auth?redirect=/play')} className="bg-gradient-hot font-black text-lg px-8 py-3 h-auto">
               <LogIn className="mr-2 h-5 w-5" />
               SIGN UP
             </Button>
