@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Gamepad2, Loader2, Trophy, Upload, User } from "lucide-react";
+import { ArrowLeft, Crown, Gamepad2, Loader2, Mail, Trophy, Upload, User } from "lucide-react";
+import lorisImg from "@/assets/loris.png";
 import { supabase, Profile } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameAccess } from "@/hooks/useGameAccess";
@@ -244,6 +245,17 @@ export default function Account() {
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 SAVE
               </Button>
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              <a
+                href="mailto:lorisjsd@gmail.com"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mx-auto w-fit text-xs pt-4"
+              >
+                <img src={lorisImg.src} alt="" className="w-7 h-7 rounded-full object-cover" />
+                <span>Bug or question?</span>
+                <Mail className="w-3.5 h-3.5" />
+              </a>
             </div>
           </motion.div>
         )}
