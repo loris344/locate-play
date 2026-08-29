@@ -108,11 +108,12 @@ export function useGameAccess(): GameAccess {
       if (subscribed && sub) {
         const rawPlan = sub.plan || sub.plan_type || sub.interval || null;
         if (rawPlan) {
-          const labels: Record<string, string> = { month: 'Monthly', monthly: 'Monthly', quarter: 'Quarterly', quarterly: 'Quarterly', year: 'Yearly', yearly: 'Yearly', annual: 'Yearly' };
+          const labels: Record<string, string> = { week: 'Weekly', weekly: 'Weekly', month: 'Monthly', monthly: 'Monthly', quarter: 'Quarterly', quarterly: 'Quarterly', year: 'Yearly', yearly: 'Yearly', annual: 'Yearly' };
           setPlanLabel(labels[rawPlan.toLowerCase()] || rawPlan);
         } else if (sub.expires_at && sub.created_at) {
           const diffDays = Math.round((new Date(sub.expires_at).getTime() - new Date(sub.created_at).getTime()) / 86400000);
-          if (diffDays <= 35) setPlanLabel('Monthly');
+          if (diffDays <= 10) setPlanLabel('Weekly');
+          else if (diffDays <= 35) setPlanLabel('Monthly');
           else if (diffDays <= 100) setPlanLabel('Quarterly');
           else setPlanLabel('Yearly');
         } else {
