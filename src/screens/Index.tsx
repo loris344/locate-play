@@ -9,6 +9,7 @@ import { useGameAccess } from '@/hooks/useGameAccess';
 import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 import ActorNameTicker from '@/components/ActorNameTicker';
 import UserProfilePopover from '@/components/UserProfilePopover';
+import LiveVisitorCount from '@/components/LiveVisitorCount';
 
 export default function Index() {
   const router = useRouter();
@@ -58,7 +59,7 @@ export default function Index() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            Watch. Guess. Score. 🌍🔥
+            Learn geography (and a few faces) while having fun 🌍🔥
           </motion.p>
 
           <ActorNameTicker />
@@ -83,6 +84,15 @@ export default function Index() {
               <p className="text-sm font-bold text-foreground">{label}</p>
             </div>
           ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.85 }}
+          className="flex justify-center"
+        >
+          <LiveVisitorCount />
         </motion.div>
 
         {/* CTA */}
