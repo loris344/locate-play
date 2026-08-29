@@ -10,27 +10,31 @@ import VideoPlayer from "@/components/VideoPlayer";
 import ScoreDisplay from "@/components/ScoreDisplay";
 import StripePaywall from "@/components/StripePaywall";
 import StripePricingTable from "@/components/StripePricingTable";
-import RoundTimer, { getTimeMultiplier, getTimeLabel } from "@/components/RoundTimer";
+import RoundTimer, { getTimeLabel } from "@/components/RoundTimer";
 import RoundIntro from "@/components/RoundIntro";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2, Crown, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { haversineDistance, calculateScore } from "@/lib/scoring";
 
 const TOTAL_ROUNDS = 5;
+const SEEN_KEY = "geogushing_seen_videos";
+
+type PlayableVideo = Omit<Video, "latitude" | "longitude">;
 
 export default function Game() {
   const router = useRouter();
   const navigate = router.push;
   const { user } = useAuth();
   const gameAccess = useGameAccess();
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [videos, setVideos] = useState<PlayableVideo[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [guessMarker, setGuessMarker] = useState<[number, number] | null>(null);
   const [answerMarker, setAnswerMarker] = useState<[number, number] | null>(null);
   const [roundResult, setRoundResult] = useState<{ distance: number; score: number; timeMultiplier: number; baseScore: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
@@ -50,52 +54,35 @@ export default function Game() {
     }
   }, [videos, currentRound, gameOver]);
   useEffect(() => {
-    async function fetchVideos() {
+    async function startGame() {
       setLoading(true);
-      console.log("[GEOGUSHING] Fetching videos from Supabase...");
-      const { data, error } = await supabase.from("videos").select("*").limit(100);
-      console.log("[GEOGUSHING] Result:", { data, error });
 
-      if (error) {
-        setError(`Failed to load videos: ${error.message}`);
-        setLoading(false);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setError("No videos found in the database.");
-        setLoading(false);
-        return;
-      }
-
-      // Filter out already-seen videos
-      const seenKey = "geogushing_seen_videos";
       let seen: string[] = [];
-      try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch { seen = []; }
+      try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"); } catch { seen = []; }
 
-      let available = data.filter((v) => !seen.includes(v.id));
-      // If not enough unseen videos, reset seen list and retry
-      if (available.length < TOTAL_ROUNDS) {
-        localStorage.removeItem(seenKey);
-        available = data;
-      }
-      if (available.length < TOTAL_ROUNDS) {
-        setError("Not enough videos available. Come back soon! 🎬");
+      const { data, error } = await supabase.functions.invoke("game-start", { body: { seenVideoIds: seen } });
+
+      if (error || !data?.videos || !data?.sessionId) {
+        setError(data?.error || "Could not start the game. Please try again.");
         setLoading(false);
         return;
       }
 
-      const shuffled = available.sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
+      const shuffled: PlayableVideo[] = data.videos;
 
-      // Save these as seen
-      const newSeen = [...seen, ...shuffled.map((v) => v.id)];
-      localStorage.setItem(seenKey, JSON.stringify(newSeen));
+      // If the server had to fall back to the full pool (not enough unseen
+      // videos left), reset the local "seen" list so it doesn't grow forever.
+      const newSeen = shuffled.every((v) => !seen.includes(v.id))
+        ? [...seen, ...shuffled.map((v) => v.id)]
+        : shuffled.map((v) => v.id);
+      localStorage.setItem(SEEN_KEY, JSON.stringify(newSeen));
 
+      setSessionId(data.sessionId);
       setVideos(shuffled);
       setLoading(false);
     }
 
-    fetchVideos();
+    startGame();
   }, []);
 
   const currentVideo = videos[currentRound];
@@ -108,50 +95,71 @@ export default function Game() {
     [roundResult],
   );
 
-  const handleSubmitGuess = () => {
-    if (!guessMarker || !currentVideo) return;
+  const handleSubmitGuess = async () => {
+    if (!guessMarker || !currentVideo || !sessionId || submitting) return;
 
     setTimerActive(false);
-    const distance = haversineDistance(guessMarker[0], guessMarker[1], currentVideo.latitude, currentVideo.longitude);
-    const baseScore = calculateScore(distance);
-    const timeMultiplier = getTimeMultiplier(elapsedRef.current);
-    const score = Math.round(baseScore * timeMultiplier);
+    setSubmitting(true);
 
-    setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
-    setRoundResult({ distance, score, timeMultiplier, baseScore });
-    setTotalScore((prev) => prev + score);
+    const { data, error } = await supabase.functions.invoke("submit-round", {
+      body: {
+        sessionId,
+        videoId: currentVideo.id,
+        guessLat: guessMarker[0],
+        guessLng: guessMarker[1],
+        elapsedSeconds: elapsedRef.current,
+      },
+    });
+
+    setSubmitting(false);
+
+    if (error || typeof data?.score !== "number") {
+      setError(data?.error || "Could not submit your guess. Please try again.");
+      return;
+    }
+
+    setAnswerMarker([data.correctLat, data.correctLng]);
+    setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
+    setTotalScore((prev) => prev + data.score);
+
+    if (data.finished) {
+      gameAccess.recordGamePlayed();
+    }
   };
 
-  const handleTimeUp = useCallback(() => {
-    if (!currentVideo || roundResult) return;
+  const handleTimeUp = useCallback(async () => {
+    if (!currentVideo || roundResult || !sessionId || submitting) return;
     setTimerActive(false);
-    const guessLat = guessMarker?.[0] ?? 0;
-    const guessLng = guessMarker?.[1] ?? 0;
-    const distance = guessMarker
-      ? haversineDistance(guessLat, guessLng, currentVideo.latitude, currentVideo.longitude)
-      : 20000;
-    setAnswerMarker([currentVideo.latitude, currentVideo.longitude]);
-    setRoundResult({ distance, score: 0, timeMultiplier: 0, baseScore: 0 });
-  }, [currentVideo, guessMarker, roundResult]);
+    setSubmitting(true);
+
+    const { data, error } = await supabase.functions.invoke("submit-round", {
+      body: {
+        sessionId,
+        videoId: currentVideo.id,
+        guessLat: guessMarker?.[0],
+        guessLng: guessMarker?.[1],
+        timedOut: true,
+      },
+    });
+
+    setSubmitting(false);
+
+    if (error || typeof data?.score !== "number") {
+      setError(data?.error || "Could not submit your guess. Please try again.");
+      return;
+    }
+
+    setAnswerMarker([data.correctLat, data.correctLng]);
+    setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
+
+    if (data.finished) {
+      gameAccess.recordGamePlayed();
+    }
+  }, [currentVideo, guessMarker, roundResult, sessionId, submitting, gameAccess]);
 
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {
       setGameOver(true);
-      gameAccess.recordGamePlayed();
-
-      if (user) {
-        supabase
-          .from("game_scores")
-          .insert({
-            user_id: user.id,
-            total_score: totalScore,
-          })
-          .then(({ error }) => {
-            if (error) {
-              console.error("[GEOGUSHING] Failed to save score:", error);
-            }
-          });
-      }
       return;
     }
     setCurrentRound((prev) => prev + 1);
@@ -329,10 +337,10 @@ export default function Game() {
               )}
               <Button
                 onClick={handleSubmitGuess}
-                disabled={!guessMarker}
+                disabled={!guessMarker || submitting}
                 className="flex-1 bg-gradient-hot font-black text-lg h-12 shadow-glow animate-pulse-glow disabled:opacity-50 disabled:animate-none"
               >
-                <MapPin className="mr-2 h-5 w-5" />
+                {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <MapPin className="mr-2 h-5 w-5" />}
                 GUESS!
               </Button>
             </>

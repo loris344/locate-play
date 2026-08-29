@@ -134,23 +134,16 @@ export function useGameAccess(): GameAccess {
 
       const { startIso, endIso } = getUtcDayRange();
 
-      let { count, error } = await supabase
-        .from('game_scores')
+      // Counts game_sessions (written server-side the moment a game starts,
+      // by the game-start edge function), not game_scores (only written on
+      // completion) — so a player who quits mid-game still uses up their
+      // daily slot instead of getting it back for free.
+      const { count, error } = await supabase
+        .from('game_sessions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .gte('created_at', startIso)
         .lte('created_at', endIso);
-
-      if (error) {
-        const fallback = await supabase
-          .from('game_scores')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .gte('played_at', startIso)
-          .lte('played_at', endIso);
-        count = fallback.count;
-        error = fallback.error;
-      }
 
       if (error) {
         console.error('[GEOGUSHING] Daily games count failed:', error);
