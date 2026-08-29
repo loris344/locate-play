@@ -38,18 +38,26 @@ function ResetCountdown() {
   );
 }
 
+const PLAN_OPTIONS = [
+  { name: 'Weekly', interval: 'week' as const, price: '$5.99', period: '/week' },
+  { name: 'Monthly', interval: 'month' as const, price: '$14', period: '/month', badge: 'POPULAR' },
+  { name: 'Yearly', interval: 'year' as const, price: '$120', period: '/year', badge: 'BEST VALUE' },
+];
+
 export default function Subscription() {
   const router = useRouter();
   const navigate = router.push;
   const { user } = useAuth();
   const { isSubscribed, subscriptionEnd, cancelAt, planLabel, gamesPlayedToday, loading } = useGameAccess();
   const { toast } = useToast();
-  const [openingPortal, setOpeningPortal] = useState<'update' | 'cancel' | null>(null);
+  const [cancelingPortal, setCancelingPortal] = useState(false);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [changingPlan, setChangingPlan] = useState<string | null>(null);
 
-  const handleManageSubscription = async (flow: 'update' | 'cancel') => {
-    setOpeningPortal(flow);
+  const handleCancelSubscription = async () => {
+    setCancelingPortal(true);
     try {
-      const { data, error } = await supabase.functions.invoke('stripe-portal', { body: { flow } });
+      const { data, error } = await supabase.functions.invoke('stripe-portal', { body: { flow: 'cancel' } });
       if (error || !data?.url) throw error || new Error('Could not open the billing portal');
       window.location.href = data.url;
     } catch (err) {
@@ -58,7 +66,25 @@ export default function Subscription() {
         description: err instanceof Error ? err.message : 'Could not open the billing portal',
         variant: 'destructive',
       });
-      setOpeningPortal(null);
+      setCancelingPortal(false);
+    }
+  };
+
+  const handleChangePlan = async (interval: 'week' | 'month' | 'year') => {
+    setChangingPlan(interval);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-change-plan', { body: { interval } });
+      if (error || !data?.success) throw error || new Error('Could not change plan');
+      toast({ title: 'Plan updated', description: 'Your subscription has been switched.' });
+      setShowPlanPicker(false);
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Could not change plan',
+        variant: 'destructive',
+      });
+      setChangingPlan(null);
     }
   };
 
@@ -146,26 +172,70 @@ export default function Subscription() {
         </motion.div>
 
         {isSubscribed && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button
-              onClick={() => handleManageSubscription('update')}
-              disabled={openingPortal !== null}
-              variant="outline"
-              className="font-bold"
-            >
-              {openingPortal === 'update' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Settings className="mr-2 h-4 w-4" />}
-              Change Plan
-            </Button>
-            <Button
-              onClick={() => handleManageSubscription('cancel')}
-              disabled={openingPortal !== null}
-              variant="outline"
-              className="font-bold text-destructive hover:text-destructive"
-            >
-              {openingPortal === 'cancel' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
-              Cancel Subscription
-            </Button>
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button
+                onClick={() => setShowPlanPicker((v) => !v)}
+                variant="outline"
+                className="font-bold"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Change Plan
+              </Button>
+              <Button
+                onClick={handleCancelSubscription}
+                disabled={cancelingPortal}
+                variant="outline"
+                className="font-bold text-destructive hover:text-destructive"
+              >
+                {cancelingPortal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
+                Cancel Subscription
+              </Button>
+            </div>
+
+            {showPlanPicker && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+              >
+                {PLAN_OPTIONS.map((plan) => {
+                  const isCurrent = plan.name === planLabel;
+                  return (
+                    <div
+                      key={plan.name}
+                      className={`relative rounded-xl border-2 p-4 text-center ${
+                        isCurrent ? 'border-green-500 bg-green-500/10' : 'border-border bg-card'
+                      }`}
+                    >
+                      {plan.badge && !isCurrent && (
+                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full">
+                          {plan.badge}
+                        </span>
+                      )}
+                      <p className="font-black text-lg text-foreground">{plan.name}</p>
+                      <p className="text-xl font-black text-gradient-hot">
+                        {plan.price}
+                        <span className="text-sm text-muted-foreground font-normal">{plan.period}</span>
+                      </p>
+                      {isCurrent ? (
+                        <p className="mt-3 text-xs font-bold text-green-500">CURRENT PLAN</p>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleChangePlan(plan.interval)}
+                          disabled={changingPlan !== null}
+                          className="mt-3 w-full font-bold"
+                        >
+                          {changingPlan === plan.interval ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Switch'}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </>
         )}
 
         {/* Pricing table if not subscribed */}
