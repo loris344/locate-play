@@ -4,14 +4,18 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Trophy, ArrowLeft, Loader2 } from 'lucide-react';
+import { Trophy, ArrowLeft, Loader2, Instagram, Facebook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface LeaderboardEntry {
   username: string;
   total_score: number;
   games_played: number;
   last_played_at: string;
+  avatar_url: string | null;
+  instagram_handle: string | null;
+  facebook_handle: string | null;
 }
 
 export default function Leaderboard() {
@@ -71,11 +75,43 @@ export default function Leaderboard() {
                 }`}>
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
                 </span>
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage src={entry.avatar_url || undefined} alt={entry.username} />
+                  <AvatarFallback className="text-xs font-black">
+                    {entry.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-foreground truncate">{entry.username}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {entry.games_played} game{entry.games_played !== 1 ? 's' : ''} played
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {entry.games_played} game{entry.games_played !== 1 ? 's' : ''} played
+                    </span>
+                    {entry.instagram_handle && (
+                      <a
+                        href={`https://instagram.com/${entry.instagram_handle.replace(/^@/, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-primary"
+                      >
+                        <Instagram className="h-3 w-3" />
+                      </a>
+                    )}
+                    {entry.facebook_handle && (
+                      <a
+                        href={
+                          entry.facebook_handle.startsWith('http')
+                            ? entry.facebook_handle
+                            : `https://facebook.com/${entry.facebook_handle}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-primary"
+                      >
+                        <Facebook className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <span className="text-lg font-black text-secondary">
                   {entry.total_score.toLocaleString()}

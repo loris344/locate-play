@@ -16,3 +16,12 @@ export interface Video {
   actor_photo_url?: string;
   source_url?: string;
 }
+
+export interface Profile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  instagram_handle: string | null;
+  facebook_handle: string | null;
+  show_social: boolean;
+}

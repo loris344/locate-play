@@ -1,0 +1,253 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowLeft, Crown, Gamepad2, Loader2, Trophy, Upload, User } from "lucide-react";
+import { supabase, Profile } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGameAccess } from "@/hooks/useGameAccess";
+import { resizeImageToBlob } from "@/lib/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
+
+interface Stats {
+  total_score: number;
+  games_played: number;
+}
+
+export default function Account() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const gameAccess = useGameAccess();
+  const { toast } = useToast();
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [showSocial, setShowSocial] = useState(false);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function load() {
+      const [{ data: profileData }, { data: scores }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle(),
+        supabase.from("game_scores").select("total_score").eq("user_id", user!.id),
+      ]);
+
+      if (profileData) {
+        setProfile(profileData as Profile);
+        setInstagram(profileData.instagram_handle || "");
+        setFacebook(profileData.facebook_handle || "");
+        setShowSocial(!!profileData.show_social);
+      }
+
+      if (scores) {
+        setStats({
+          total_score: scores.reduce((sum, r) => sum + (r.total_score || 0), 0),
+          games_played: scores.length,
+        });
+      }
+      setLoading(false);
+    }
+
+    load();
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg p-8 text-center max-w-md space-y-4">
+          <User className="w-12 h-12 text-secondary mx-auto" />
+          <h2 className="text-2xl font-black text-gradient-hot">CONNEXION REQUISE</h2>
+          <p className="text-muted-foreground">Connecte-toi pour gérer ton compte.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => router.push("/auth?redirect=/account")} className="bg-gradient-hot font-bold">
+              Se connecter
+            </Button>
+            <Button onClick={() => router.push("/")} variant="outline">
+              Accueil
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const username = user.user_metadata?.username || "Joueur";
+
+  const handleAvatarPick = () => fileInputRef.current?.click();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const blob = await resizeImageToBlob(file);
+      const path = `${user.id}/avatar.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const avatarUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+
+      const { error: dbError } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, username, avatar_url: avatarUrl });
+      if (dbError) throw dbError;
+
+      setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : prev));
+      toast({ title: "Photo mise à jour !" });
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Upload impossible",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      username,
+      instagram_handle: instagram.trim() || null,
+      facebook_handle: facebook.trim() || null,
+      show_social: showSocial,
+    });
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profil enregistré !" });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-lg mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-black text-gradient-hot">MON COMPTE</h1>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            {/* Avatar + identity */}
+            <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-4">
+              <button onClick={handleAvatarPick} className="relative shrink-0" disabled={uploading}>
+                <Avatar className="h-16 w-16 border-2 border-primary/50">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={username} />
+                  <AvatarFallback className="text-lg font-black">
+                    {username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-primary flex items-center justify-center border-2 border-card">
+                  {uploading ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-primary-foreground" />
+                  ) : (
+                    <Upload className="h-3 w-3 text-primary-foreground" />
+                  )}
+                </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              <div className="min-w-0">
+                <p className="font-bold text-foreground truncate">{username}</p>
+                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+              </div>
+            </div>
+
+            {/* Stats + plan */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <Trophy className="h-4 w-4 text-secondary mx-auto mb-1" />
+                <p className="text-lg font-black text-foreground">
+                  {stats?.total_score?.toLocaleString() ?? "—"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Points</p>
+              </div>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <Gamepad2 className="h-4 w-4 text-primary mx-auto mb-1" />
+                <p className="text-lg font-black text-foreground">{stats?.games_played ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground">Parties</p>
+              </div>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <Crown className="h-4 w-4 text-yellow-400 mx-auto mb-1" />
+                <p className="text-sm font-black text-foreground truncate">
+                  {gameAccess.isSubscribed ? gameAccess.planLabel || "Premium" : "Gratuit"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Plan</p>
+              </div>
+            </div>
+
+            {/* Social links */}
+            <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="instagram">Instagram</Label>
+                <Input
+                  id="instagram"
+                  placeholder="@tonpseudo"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  className="bg-muted border-border"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facebook">Facebook</Label>
+                <Input
+                  id="facebook"
+                  placeholder="facebook.com/tonpseudo"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  className="bg-muted border-border"
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  <p className="text-sm font-bold text-foreground">Afficher sur le leaderboard</p>
+                  <p className="text-xs text-muted-foreground">Tes liens sociaux seront visibles publiquement</p>
+                </div>
+                <Switch checked={showSocial} onCheckedChange={setShowSocial} />
+              </div>
+              <Button onClick={handleSave} disabled={saving} className="w-full bg-gradient-hot font-black">
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                ENREGISTRER
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}

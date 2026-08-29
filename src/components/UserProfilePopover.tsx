@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Crown, LogOut, User, Trophy, Gamepad2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Crown, LogOut, Settings, Trophy, Gamepad2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,8 +13,10 @@ interface UserStats {
 }
 
 export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boolean }) {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const username = user?.user_metadata?.username || user?.email || 'Joueur';
 
@@ -30,6 +34,12 @@ export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boo
           });
         }
       });
+    supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
   }, [user]);
 
   if (!user) return null;
@@ -37,16 +47,25 @@ export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boo
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
+        <button className="flex items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 py-1 text-sm font-bold text-foreground hover:border-primary/50 transition-colors cursor-pointer">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={avatarUrl || undefined} alt={username} />
+            <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-black">
+              {username.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
           {isSubscribed && <Crown className="h-4 w-4 text-yellow-400" />}
           {username}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-4 space-y-3" align="end">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="h-5 w-5 text-primary" />
-          </div>
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={avatarUrl || undefined} alt={username} />
+            <AvatarFallback className="bg-primary/20 text-primary text-xs font-black">
+              {username.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
           <div>
             <p className="font-bold text-foreground text-sm">{username}</p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
@@ -64,6 +83,9 @@ export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boo
             <p className="text-[10px] text-muted-foreground">Parties</p>
           </div>
         </div>
+        <Button variant="ghost" size="sm" className="w-full" onClick={() => router.push('/account')}>
+          <Settings className="h-4 w-4 mr-2" /> Mon compte
+        </Button>
         <Button variant="ghost" size="sm" className="w-full" onClick={signOut}>
           <LogOut className="h-4 w-4 mr-2" /> Déconnexion
         </Button>
