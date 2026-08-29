@@ -94,7 +94,7 @@ export default function Leaderboard() {
                         rel="noreferrer"
                         className="hover:text-primary"
                       >
-                        <Instagram className="h-3 w-3" />
+                        <Instagram className="h-5 w-5 sm:h-4 sm:w-4" />
                       </a>
                     )}
                     {entry.facebook_handle && (
@@ -108,7 +108,7 @@ export default function Leaderboard() {
                         rel="noreferrer"
                         className="hover:text-primary"
                       >
-                        <Facebook className="h-3 w-3" />
+                        <Facebook className="h-5 w-5 sm:h-4 sm:w-4" />
                       </a>
                     )}
                   </div>
