@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
-import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 import ActorNameTicker from '@/components/ActorNameTicker';
 import UserProfilePopover from '@/components/UserProfilePopover';
 import LiveVisitorCount from '@/components/LiveVisitorCount';
@@ -31,9 +30,6 @@ export default function Index() {
           </Button>
         )}
       </div>
-
-      {/* Photo mosaic background */}
-      <InfinitePhotoMosaic />
 
       <motion.div
         initial={{ y: -50, opacity: 0 }}
