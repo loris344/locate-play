@@ -72,9 +72,14 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        // Was animating box-shadow directly, which forces a main-thread
+        // repaint every frame for as long as the element is on screen
+        // (flagged by Lighthouse as a non-composited animation). Pulsing
+        // opacity over the existing static shadow-glow gives the same
+        // breathing effect while running entirely on the compositor.
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(338 90% 56% / 0.3)" },
-          "50%": { boxShadow: "0 0 40px hsl(338 90% 56% / 0.6)" },
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.85" },
         },
         "bounce-in": {
           "0%": { transform: "scale(0)", opacity: "0" },
