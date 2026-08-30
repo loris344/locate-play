@@ -9,6 +9,7 @@ import { useGameAccess } from '@/hooks/useGameAccess';
 import ActorNameTicker from '@/components/ActorNameTicker';
 import UserProfilePopover from '@/components/UserProfilePopover';
 import LiveVisitorCount from '@/components/LiveVisitorCount';
+import InfinitePhotoMosaic from '@/components/InfinitePhotoMosaic';
 
 export default function Index() {
   const router = useRouter();
@@ -30,6 +31,8 @@ export default function Index() {
           </Button>
         )}
       </div>
+
+      <InfinitePhotoMosaic />
 
       {/*
         No opacity-based entrance animations here: Core Web Vitals excludes
