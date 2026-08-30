@@ -149,7 +149,8 @@ returns table (
   last_played_at timestamptz,
   avatar_url text,
   instagram_handle text,
-  facebook_handle text
+  facebook_handle text,
+  is_premium boolean
 )
 language sql
 security definer
@@ -162,9 +163,11 @@ as $$
     max(gs.created_at) as last_played_at,
     p.avatar_url,
     case when p.show_social then p.instagram_handle else null end as instagram_handle,
-    case when p.show_social then p.facebook_handle else null end as facebook_handle
+    case when p.show_social then p.facebook_handle else null end as facebook_handle,
+    coalesce(bool_or(s.status = 'active' and (s.expires_at is null or s.expires_at > now())), false) as is_premium
   from public.game_scores gs
   join public.profiles p on p.id = gs.user_id
+  left join public.subscriptions s on s.user_id = gs.user_id
   group by p.username, p.avatar_url, p.show_social, p.instagram_handle, p.facebook_handle
   order by total_score desc
   limit 50;

@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Trophy, ArrowLeft, Loader2, Instagram, Facebook } from 'lucide-react';
+import { Trophy, ArrowLeft, Loader2, Instagram, Facebook, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface LeaderboardEntry {
   username: string;
@@ -17,11 +18,13 @@ interface LeaderboardEntry {
   avatar_url: string | null;
   instagram_handle: string | null;
   facebook_handle: string | null;
+  is_premium: boolean;
 }
 
 export default function Leaderboard() {
   const router = useRouter();
   const navigate = router.push;
+  const { toast } = useToast();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedAvatar, setExpandedAvatar] = useState<{ url: string; username: string } | null>(null);
@@ -90,7 +93,18 @@ export default function Leaderboard() {
                   </Avatar>
                 </button>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground truncate">{entry.username}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-foreground truncate">{entry.username}</p>
+                    {entry.is_premium && (
+                      <button
+                        onClick={() => toast({ title: `👑 ${entry.username} is a Premium member` })}
+                        className="shrink-0 text-secondary hover:scale-110 transition-transform"
+                        aria-label={`${entry.username} is a Premium member`}
+                      >
+                        <Crown className="h-4 w-4 fill-secondary" />
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>
                       {entry.games_played} game{entry.games_played !== 1 ? 's' : ''} played
