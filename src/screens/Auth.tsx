@@ -18,6 +18,7 @@ export default function Auth() {
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -30,6 +31,22 @@ export default function Auth() {
       router.replace(getRedirect());
     }
   }, [user, router]);
+
+  // Confirming the signup email happens wherever the user opens it — often a
+  // different device or browser than the one they signed up on, so there's no
+  // storage/session to share back to this tab. Instead, keep quietly retrying
+  // the login itself: it fails with "Email not confirmed" until the link is
+  // clicked, then succeeds on its own and the effect above takes over.
+  useEffect(() => {
+    if (!awaitingConfirmation) return;
+
+    const interval = setInterval(async () => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!error) clearInterval(interval);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [awaitingConfirmation, email, password]);
 
   if (user) return null;
 
@@ -54,6 +71,7 @@ export default function Auth() {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Check your email", description: "We sent you a confirmation link." });
+        setAwaitingConfirmation(true);
       }
     }
     setLoading(false);
@@ -93,7 +111,25 @@ export default function Auth() {
         </div>
 
         <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-          {showForgotPassword ? (
+          {awaitingConfirmation ? (
+            <div className="text-center space-y-4 py-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              <div>
+                <p className="font-bold text-foreground">Check your email</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  We sent a confirmation link to <span className="text-foreground">{email}</span>.
+                  This page will log you in automatically once you click it — even from another device.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAwaitingConfirmation(false)}
+                className="text-xs text-muted-foreground hover:text-primary hover:underline"
+              >
+                Wrong email? Go back
+              </button>
+            </div>
+          ) : showForgotPassword ? (
             <form onSubmit={handleForgotPassword} className="space-y-3">
               <p className="text-sm text-muted-foreground text-center">
                 Enter your email and we&apos;ll send you a link to reset your password.
@@ -196,7 +232,7 @@ export default function Auth() {
           )}
         </div>
 
-        {!showForgotPassword && (
+        {!showForgotPassword && !awaitingConfirmation && (
           <p className="text-center text-sm text-muted-foreground">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
             <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline">
