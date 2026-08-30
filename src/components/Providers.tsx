@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import UsernamePrompt from "@/components/UsernamePrompt";
+import { supabase } from "@/lib/supabase";
 
 const POSTHOG_API_KEY = "phc_BCTmCtP8J4v5nPCefD33TskxTSGhFfiJHmwAvddPVbvK";
 
@@ -46,12 +47,43 @@ function RequireUsername({ children }: { children: React.ReactNode }) {
   const [needsUsername, setNeedsUsername] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      const username = user.user_metadata?.username;
-      setNeedsUsername(!username || username.trim() === "");
-    } else {
+    if (loading || !user) {
       setNeedsUsername(false);
+      return;
     }
+
+    let cancelled = false;
+    const userId = user.id;
+    const metadataUsername = user.user_metadata?.username?.trim();
+
+    (async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (profile) {
+        setNeedsUsername(false);
+        return;
+      }
+
+      if (metadataUsername) {
+        // Email signup already collected a username but the profiles row
+        // never got created (that used to only happen from this prompt) -
+        // self-heal instead of asking again.
+        await supabase.from("profiles").upsert({ id: userId, username: metadataUsername });
+        if (!cancelled) setNeedsUsername(false);
+      } else {
+        setNeedsUsername(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
   if (needsUsername) {
