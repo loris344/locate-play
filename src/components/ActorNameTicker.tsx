@@ -40,7 +40,7 @@ export default function ActorNameTicker() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="text-lg font-black text-gradient-hot absolute inset-0 flex items-center"
+            className="text-lg font-black text-gradient-hot absolute inset-0 truncate leading-8"
           >
             {names[index]}
           </motion.span>
