@@ -28,13 +28,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const refreshSession = () => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      });
+    };
 
-    return () => subscription.unsubscribe();
+    refreshSession();
+
+    // A tab left open on the signup/login form (e.g. while the user confirms
+    // their email in a different tab or app) never reloads on its own, so it
+    // never re-checks localStorage for the session that was just created
+    // elsewhere. Re-check whenever the tab regains focus so it picks it up.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshSession();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refreshSession);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refreshSession);
+    };
   }, []);
 
   const signOut = async () => {
