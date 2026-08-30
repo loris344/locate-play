@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import { PostHogProvider } from "@posthog/react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -15,10 +13,29 @@ import { supabase } from "@/lib/supabase";
 
 const POSTHOG_API_KEY = "phc_BCTmCtP8J4v5nPCefD33TskxTSGhFfiJHmwAvddPVbvK";
 
-const posthogOptions = {
-  api_host: "https://eu.i.posthog.com",
-  defaults: "2026-05-30",
-} as const;
+// @posthog/react's PostHogProvider is a thin context wrapper around
+// posthog-js that nothing else in the app consumes (no usePostHog() calls
+// anywhere) - it was only ever used to call posthog.init(). Importing the
+// full SDK eagerly at the root put it on every page's critical rendering
+// path. Loading posthog-js itself after mount keeps the exact same
+// tracking behavior while moving that weight off the initial bundle.
+function LazyPostHog() {
+  useEffect(() => {
+    import("posthog-js").then(({ default: posthog }) => {
+      posthog.init(POSTHOG_API_KEY, {
+        api_host: "https://eu.i.posthog.com",
+        defaults: "2026-05-30",
+        // The "defaults" preset turns on session recording, which pulls in
+        // an extra ~220KB recorder script and keeps capturing DOM mutations
+        // in the background - real cost for a feature nothing here relies
+        // on today. Turn it back on if session replays become useful.
+        disable_session_recording: true,
+      });
+    });
+  }, []);
+
+  return null;
+}
 
 function GlobalNav() {
   const { user } = useAuth();
@@ -97,19 +114,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <PostHogProvider apiKey={POSTHOG_API_KEY} options={posthogOptions}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <RequireUsername>
-              <GlobalNav />
-              {children}
-            </RequireUsername>
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </PostHogProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <LazyPostHog />
+          <RequireUsername>
+            <GlobalNav />
+            {children}
+          </RequireUsername>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

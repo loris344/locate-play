@@ -31,9 +31,17 @@ export default function Index() {
         )}
       </div>
 
+      {/*
+        No opacity-based entrance animations here: Core Web Vitals excludes
+        opacity:0 elements from Largest Contentful Paint until they become
+        visible, so fading in the whole hero (as this used to do, staggered
+        up to 1.3s) pushed LCP out to whenever framer-motion's JS finishes
+        hydrating - 10s+ on a throttled connection. Transform-only motion
+        (y, scale) keeps the same feel without hiding the paint from LCP.
+      */}
       <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        initial={{ y: -50 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.6 }}
         className="text-center space-y-8 relative z-10 max-w-lg"
       >
@@ -49,22 +57,17 @@ export default function Index() {
             <br />
             GUSHING
           </motion.h1>
-          <motion.p
-            className="text-muted-foreground text-lg font-medium"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
+          <p className="text-muted-foreground text-lg font-medium">
             Learn geography (and a few faces) while having fun 🌍🔥
-          </motion.p>
+          </p>
 
           <ActorNameTicker />
         </div>
 
         {/* How it works */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 20 }}
+          animate={{ y: 0 }}
           transition={{ delay: 0.7 }}
           className="grid grid-cols-3 gap-4 text-center"
         >
@@ -82,19 +85,14 @@ export default function Index() {
           ))}
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.85 }}
-          className="flex justify-center"
-        >
+        <div className="flex justify-center">
           <LiveVisitorCount />
-        </motion.div>
+        </div>
 
         {/* CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 20 }}
+          animate={{ y: 0 }}
           transition={{ delay: 0.9 }}
           className="flex gap-3"
         >
@@ -116,27 +114,17 @@ export default function Index() {
         </motion.div>
 
         {!user && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1 }}
-            className="text-muted-foreground text-xs"
-          >
+          <p className="text-muted-foreground text-xs">
             18+ only • 5 rounds per game • Sign in to save scores
-          </motion.p>
+          </p>
         )}
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.3 }}
-          className="flex items-center gap-3 bg-muted/60 backdrop-blur-sm rounded-full px-6 py-3 border border-border/50"
-        >
+        <div className="flex items-center gap-3 bg-muted/60 backdrop-blur-sm rounded-full px-6 py-3 border border-border/50">
           <ShieldCheck className="h-5 w-5 text-accent shrink-0" />
           <span className="text-sm text-muted-foreground font-semibold">
             100% SFW — Stream-safe, no explicit content
           </span>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );
