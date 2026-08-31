@@ -63,10 +63,6 @@ export default function Index() {
           <p className="text-muted-foreground text-lg font-medium">
             Learn geography (and a few faces) while having fun 🌍🔥
           </p>
-          <p className="text-muted-foreground text-xs max-w-sm mx-auto">
-            GeoGushing is a free geography guessing game: watch a short video clip and guess where in the world it
-            was filmed to score points and climb the leaderboard.
-          </p>
 
           <ActorNameTicker />
         </div>
@@ -132,6 +128,11 @@ export default function Index() {
             100% SFW — Stream-safe, no explicit content
           </span>
         </div>
+
+        <p className="text-muted-foreground/50 text-[10px] max-w-sm mx-auto">
+          GeoGushing is a free geography guessing game: watch a short video clip and guess where in the world it was
+          filmed to score points and climb the leaderboard.
+        </p>
       </motion.div>
     </div>
   );
