@@ -1,7 +1,11 @@
 -- Adds 180 fake leaderboard entries (social-proof/demo purposes) that rank
 -- alongside real players instead of replacing them. Usernames are
--- internationally varied, avatars are locally-generated on-brand initial
--- images (public/avatars/, no real people, no external image host).
+-- internationally varied. Avatars are locally-generated on-brand images
+-- (public/avatars/) mixing bold icon glyphs (camera, plane, star, crown,
+-- compass, etc.) with initials-on-gradient, for visual variety without
+-- depicting any real or fake-but-photorealistic human face - using a real
+-- person's likeness (site content or otherwise) to represent a fabricated
+-- player identity would misattribute them without consent.
 --
 -- Score math: submit-round's real per-round score is baseScore (capped at
 -- 5000) times a speed multiplier of up to 1.5x, so the true ceiling is
@@ -29,9 +33,14 @@
 -- save. Use handles you actually own or have permission for - inventing
 -- random ones risks linking to an unrelated real person's real account.
 --
--- Run once in Supabase Dashboard -> SQL Editor. Safe to re-run: the insert
--- uses ON CONFLICT DO NOTHING, so re-running this file will NOT overwrite
--- any edits you've since made in the Table Editor.
+-- Run in Supabase Dashboard -> SQL Editor. Safe to re-run, including to pick
+-- up a future update to this file (e.g. corrected scores): the insert
+-- upserts on username, refreshing total_score / games_played / avatar_url /
+-- is_premium / last_played_at each time, while leaving instagram_handle and
+-- facebook_handle alone - so a re-run never wipes out edits you've made in
+-- the Table Editor, but it WILL refresh a stale run from an older version
+-- of this file (the DB doesn't auto-sync with the repo - re-running this
+-- file after every edit is what actually applies a change).
 
 create table if not exists public.fake_leaderboard_entries (
   id serial primary key,
@@ -234,7 +243,16 @@ values
   ('RafaelSouza48', 230443, 34, now() - interval '551 hours', '/avatars/178.webp', null, null, false),
   ('FatimaMansour', 172889, 26, now() - interval '271 hours', '/avatars/179.webp', null, null, false),
   ('Ronin_34', 94263, 17, now() - interval '544 hours', '/avatars/180.webp', null, null, false)
-on conflict (username) do nothing;
+on conflict (username) do update set
+  total_score = excluded.total_score,
+  games_played = excluded.games_played,
+  last_played_at = excluded.last_played_at,
+  avatar_url = excluded.avatar_url,
+  is_premium = excluded.is_premium;
+-- instagram_handle / facebook_handle are deliberately NOT in this SET list,
+-- so re-running this file after editing them in the Table Editor never
+-- wipes them out - only the columns this file actually generates get
+-- refreshed.
 
 drop function if exists public.get_leaderboard();
 
