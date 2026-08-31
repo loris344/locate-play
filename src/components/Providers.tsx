@@ -10,6 +10,7 @@ import { Crown } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import UsernamePrompt from "@/components/UsernamePrompt";
 import { supabase } from "@/lib/supabase";
+import { notifyNewSignup } from "@/lib/notifySignup";
 
 const POSTHOG_API_KEY = "phc_BCTmCtP8J4v5nPCefD33TskxTSGhFfiJHmwAvddPVbvK";
 
@@ -92,6 +93,7 @@ function RequireUsername({ children }: { children: React.ReactNode }) {
         // never got created (that used to only happen from this prompt) -
         // self-heal instead of asking again.
         await supabase.from("profiles").upsert({ id: userId, username: metadataUsername });
+        notifyNewSignup(metadataUsername);
         if (!cancelled) setNeedsUsername(false);
       } else {
         setNeedsUsername(true);

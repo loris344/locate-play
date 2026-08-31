@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { notifyNewSignup } from "@/lib/notifySignup";
 
 interface UsernamePromptProps {
   onComplete: () => void;
@@ -31,6 +32,7 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
       const userId = data.user?.id;
       if (userId) {
         await supabase.from('profiles').upsert({ id: userId, username: trimmed });
+        notifyNewSignup(trimmed);
       }
       toast({ title: "Username saved!" });
       onComplete();
