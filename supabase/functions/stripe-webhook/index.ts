@@ -2,7 +2,8 @@
 // static frontend (no server of its own) can still react to payment events.
 //
 // Deploy:   supabase functions deploy stripe-webhook --no-verify-jwt
-// Secrets:  supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... RESEND_API_KEY=re_... TIKTOK_ACCESS_TOKEN=...
+// Secrets:  supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... RESEND_API_KEY=re_... TIKTOK_ACCESS_TOKEN=... TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=...
+//           (TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID are shared with notify-signup - already set on this project)
 // Stripe:   add an endpoint at https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 //           listening for: checkout.session.completed, customer.subscription.updated,
 //           customer.subscription.deleted
@@ -18,6 +19,8 @@ const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const tiktokAccessToken = Deno.env.get("TIKTOK_ACCESS_TOKEN");
 const TIKTOK_PIXEL_CODE = "DAA1FHJC77UEOA3O9UC0";
+const telegramBotToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+const telegramChatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -91,6 +94,15 @@ async function sendWelcomeEmail(email: string, plan: string) {
   if (!res.ok) {
     console.error("Resend welcome email failed:", res.status, await res.text());
   }
+}
+
+async function sendTelegramMessage(text: string) {
+  if (!telegramBotToken || !telegramChatId) return;
+  await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: telegramChatId, text }),
+  }).catch(() => null);
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -219,6 +231,17 @@ Deno.serve(async (req) => {
             tiktokResult = await sendTikTokPurchaseEvent(session, userId);
           } catch (err) {
             tiktokResult = `threw: ${err instanceof Error ? err.message : String(err)}`;
+          }
+
+          try {
+            const amount = ((session.amount_total ?? 0) / 100).toFixed(2);
+            const currency = (session.currency ?? "usd").toUpperCase();
+            const planLabel = PLAN_LABELS[plan] ?? plan;
+            await sendTelegramMessage(
+              `💰 New paid subscription\nPlan: ${planLabel}\nAmount: ${amount} ${currency}${email ? `\nEmail: ${email}` : ""}`,
+            );
+          } catch (err) {
+            console.error("Failed to send Telegram notification:", err);
           }
         } else {
           tiktokResult = "skipped: missing session.subscription or client_reference_id";
