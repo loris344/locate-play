@@ -4,8 +4,33 @@ declare global {
   }
 }
 
+const TTQ_READY_RETRY_MS = 200;
+const TTQ_READY_TIMEOUT_MS = 5000;
+
+// The pixel script (app/layout.tsx) loads as a separate <Script>, so on a
+// slow connection or a very fast auth resolution, code here can run before
+// window.ttq exists. A plain window.ttq?.track(...) would then just silently
+// drop the event - this waits briefly instead of losing it.
 export function trackTikTokEvent(event: string, params?: Record<string, unknown>) {
-  window.ttq?.track(event, params);
+  if (typeof window === "undefined") return;
+
+  if (window.ttq) {
+    window.ttq.track(event, params);
+    return;
+  }
+
+  let waited = 0;
+  const interval = setInterval(() => {
+    waited += TTQ_READY_RETRY_MS;
+
+    if (window.ttq) {
+      clearInterval(interval);
+      window.ttq.track(event, params);
+    } else if (waited >= TTQ_READY_TIMEOUT_MS) {
+      clearInterval(interval);
+      console.error(`[tiktok] ttq never became available, dropped event: ${event}`);
+    }
+  }, TTQ_READY_RETRY_MS);
 }
 
 // Shared dedupe guard: both the email/password flow (Auth.tsx, fires as soon
