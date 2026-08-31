@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { trackCompleteRegistrationOnce } from "@/lib/tiktok";
 
 export default function Auth() {
   const router = useRouter();
@@ -23,11 +24,16 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const justSignedUpRef = useRef(false);
 
   const getRedirect = () => searchParams.get('redirect') || '/';
 
   useEffect(() => {
     if (user) {
+      if (justSignedUpRef.current) {
+        justSignedUpRef.current = false;
+        trackCompleteRegistrationOnce(user.id);
+      }
       router.replace(getRedirect());
     }
   }, [user, router]);
@@ -71,6 +77,7 @@ export default function Auth() {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Check your email", description: "We sent you a confirmation link." });
+        justSignedUpRef.current = true;
         setAwaitingConfirmation(true);
       }
     }

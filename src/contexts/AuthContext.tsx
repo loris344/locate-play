@@ -1,6 +1,21 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
+import { trackCompleteRegistrationOnce } from '@/lib/tiktok';
+
+// Email/password signups fire CompleteRegistration from Auth.tsx itself
+// (it knows a submit just happened). OAuth providers redirect the whole page
+// away and back, wiping any in-memory state Auth.tsx could have used the
+// same way - so for OAuth, a just-created account is detected here instead,
+// from the account's own timestamps. 30s comfortably covers the redirect
+// round-trip while staying far short of "this is an existing user logging in
+// again," whose created_at and last_sign_in_at are typically hours/days apart.
+function isFreshAccount(user: User): boolean {
+  if (!user.last_sign_in_at) return false;
+  const createdAt = new Date(user.created_at).getTime();
+  const lastSignInAt = new Date(user.last_sign_in_at).getTime();
+  return Math.abs(lastSignInAt - createdAt) < 30_000;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -22,17 +37,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const applySession = (session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      if (session?.user && isFreshAccount(session.user)) {
+        trackCompleteRegistrationOnce(session.user.id);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySession(session);
     });
 
     const refreshSession = () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        applySession(session);
       });
     };
 

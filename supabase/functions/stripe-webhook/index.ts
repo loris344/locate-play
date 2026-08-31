@@ -2,7 +2,7 @@
 // static frontend (no server of its own) can still react to payment events.
 //
 // Deploy:   supabase functions deploy stripe-webhook --no-verify-jwt
-// Secrets:  supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... RESEND_API_KEY=re_...
+// Secrets:  supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... RESEND_API_KEY=re_... TIKTOK_ACCESS_TOKEN=...
 // Stripe:   add an endpoint at https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 //           listening for: checkout.session.completed, customer.subscription.updated,
 //           customer.subscription.deleted
@@ -16,6 +16,8 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
 });
 const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const tiktokAccessToken = Deno.env.get("TIKTOK_ACCESS_TOKEN");
+const TIKTOK_PIXEL_CODE = "DAA1FHJC77UEOA3O9UC0";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -91,6 +93,56 @@ async function sendWelcomeEmail(email: string, plan: string) {
   }
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input.trim().toLowerCase());
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Fires from the webhook, not from the browser: the checkout itself happens
+// on Stripe's own domain (buy.stripe.com), so there's no page on our site
+// where a client-side ttq.track('Purchase') could ever run.
+// Returns a short status string instead of throwing/logging only - the
+// caller surfaces it in the webhook's own JSON response so it's visible
+// straight from Stripe's dashboard (Supabase Edge Function logs aren't
+// reachable from the CLI used to deploy this).
+async function sendTikTokPurchaseEvent(session: Stripe.Checkout.Session, userId: string): Promise<string> {
+  if (!tiktokAccessToken) {
+    return "skipped: TIKTOK_ACCESS_TOKEN not set";
+  }
+
+  const email = session.customer_details?.email ?? session.customer_email;
+  const value = (session.amount_total ?? 0) / 100;
+  const currency = (session.currency ?? "usd").toUpperCase();
+
+  const res = await fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
+    method: "POST",
+    headers: {
+      "Access-Token": tiktokAccessToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      event_source: "web",
+      event_source_id: TIKTOK_PIXEL_CODE,
+      data: [
+        {
+          event: "Purchase",
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: session.id,
+          user: {
+            ...(email ? { email: await sha256Hex(email) } : {}),
+            external_id: await sha256Hex(userId),
+          },
+          properties: { currency, value },
+        },
+      ],
+    }),
+  });
+
+  const text = await res.text();
+  return `http ${res.status}: ${text}`;
+}
+
 // Stripe's own recurring interval ("week" | "month" | "year") doubles as our
 // plan name, so adding/changing prices in Stripe never requires touching
 // this function.
@@ -142,6 +194,8 @@ Deno.serve(async (req) => {
     return new Response("Invalid signature", { status: 400 });
   }
 
+  let tiktokResult = "not_attempted";
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -160,6 +214,14 @@ Deno.serve(async (req) => {
               console.error("Failed to send welcome email:", err);
             }
           }
+
+          try {
+            tiktokResult = await sendTikTokPurchaseEvent(session, userId);
+          } catch (err) {
+            tiktokResult = `threw: ${err instanceof Error ? err.message : String(err)}`;
+          }
+        } else {
+          tiktokResult = "skipped: missing session.subscription or client_reference_id";
         }
         break;
       }
@@ -182,7 +244,7 @@ Deno.serve(async (req) => {
     return new Response("Webhook handler error", { status: 500 });
   }
 
-  return new Response(JSON.stringify({ received: true }), {
+  return new Response(JSON.stringify({ received: true, tiktokResult }), {
     headers: { "Content-Type": "application/json" },
   });
 });
