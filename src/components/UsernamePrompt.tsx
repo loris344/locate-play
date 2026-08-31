@@ -32,7 +32,7 @@ export default function UsernamePrompt({ onComplete }: UsernamePromptProps) {
       const userId = data.user?.id;
       if (userId) {
         await supabase.from('profiles').upsert({ id: userId, username: trimmed });
-        notifyNewSignup(trimmed);
+        notifyNewSignup(userId, trimmed);
       }
       toast({ title: "Username saved!" });
       onComplete();

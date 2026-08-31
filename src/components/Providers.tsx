@@ -88,7 +88,7 @@ function RequireUsername({ children }: { children: React.ReactNode }) {
         // never got created (that used to only happen from this prompt) -
         // self-heal instead of asking again.
         await supabase.from("profiles").upsert({ id: userId, username: metadataUsername });
-        notifyNewSignup(metadataUsername);
+        notifyNewSignup(userId, metadataUsername);
         if (!cancelled) setNeedsUsername(false);
       } else {
         setNeedsUsername(true);
