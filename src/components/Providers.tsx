@@ -26,11 +26,6 @@ function LazyPostHog() {
       posthog.init(POSTHOG_API_KEY, {
         api_host: "https://eu.i.posthog.com",
         defaults: "2026-05-30",
-        // The "defaults" preset turns on session recording, which pulls in
-        // an extra ~220KB recorder script and keeps capturing DOM mutations
-        // in the background - real cost for a feature nothing here relies
-        // on today. Turn it back on if session replays become useful.
-        disable_session_recording: true,
       });
     });
   }, []);
