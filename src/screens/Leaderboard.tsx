@@ -61,12 +61,12 @@ export default function Leaderboard() {
           </div>
         ) : (
           <div className="space-y-2">
-            {entries.slice(0, 10).map((entry, i) => (
+            {entries.slice(0, 100).map((entry, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ delay: Math.min(i * 0.03, 0.6) }}
                 className={`flex items-center gap-4 rounded-lg border p-3 ${
                   i === 0
                     ? 'border-secondary bg-secondary/10'
@@ -75,7 +75,7 @@ export default function Leaderboard() {
                       : 'border-border bg-card'
                 }`}
               >
-                <span className={`text-2xl font-black w-8 text-center ${
+                <span className={`${i + 1 >= 100 ? 'text-lg' : 'text-2xl'} font-black w-10 shrink-0 text-center ${
                   i === 0 ? 'text-secondary' : i < 3 ? 'text-primary' : 'text-muted-foreground'
                 }`}>
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
@@ -86,7 +86,7 @@ export default function Leaderboard() {
                   disabled={!entry.avatar_url}
                 >
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={entry.avatar_url || undefined} alt={entry.username} />
+                    <AvatarImage src={entry.avatar_url || undefined} alt={entry.username} loading="lazy" />
                     <AvatarFallback className="text-sm font-black">
                       {entry.username.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
