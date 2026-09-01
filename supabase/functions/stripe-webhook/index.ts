@@ -2,7 +2,7 @@
 // static frontend (no server of its own) can still react to payment events.
 //
 // Deploy:   supabase functions deploy stripe-webhook --no-verify-jwt
-// Secrets:  supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... RESEND_API_KEY=re_... TIKTOK_ACCESS_TOKEN=... TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=...
+// Secrets:  supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... RESEND_API_KEY=re_... TIKTOK_ACCESS_TOKEN=... X_PIXEL_TOKEN=... TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=...
 //           (TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID are shared with notify-signup - already set on this project)
 // Stripe:   add an endpoint at https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 //           listening for: checkout.session.completed, customer.subscription.updated,
@@ -19,6 +19,8 @@ const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const tiktokAccessToken = Deno.env.get("TIKTOK_ACCESS_TOKEN");
 const TIKTOK_PIXEL_CODE = "DAA1FHJC77UEOA3O9UC0";
+const xPixelToken = Deno.env.get("X_PIXEL_TOKEN");
+const X_PIXEL_ID = "reumv";
 const telegramBotToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const telegramChatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
@@ -155,6 +157,42 @@ async function sendTikTokPurchaseEvent(session: Stripe.Checkout.Session, userId:
   return `http ${res.status}: ${text}`;
 }
 
+// Same reasoning as sendTikTokPurchaseEvent: checkout happens on
+// buy.stripe.com, so there's no page on our site where a client-side X
+// pixel could ever catch the purchase - this has to go through X's
+// Conversion API from the webhook instead.
+async function sendXPurchaseEvent(session: Stripe.Checkout.Session): Promise<string> {
+  if (!xPixelToken) {
+    return "skipped: X_PIXEL_TOKEN not set";
+  }
+
+  const email = session.customer_details?.email ?? session.customer_email;
+  if (!email) {
+    return "skipped: no email on session";
+  }
+
+  const res = await fetch(`https://ads-api.x.com/12/measurement/conversions/${X_PIXEL_ID}`, {
+    method: "POST",
+    headers: {
+      "X-Pixel-Token": xPixelToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      conversions: [
+        {
+          conversion_time: new Date().toISOString(),
+          event_id: session.id,
+          event_source_url: "https://geogushing.com/subscription",
+          identifiers: [{ hashed_email: await sha256Hex(email) }],
+        },
+      ],
+    }),
+  });
+
+  const text = await res.text();
+  return `http ${res.status}: ${text}`;
+}
+
 // Stripe's own recurring interval ("week" | "month" | "year") doubles as our
 // plan name, so adding/changing prices in Stripe never requires touching
 // this function.
@@ -207,6 +245,7 @@ Deno.serve(async (req) => {
   }
 
   let tiktokResult = "not_attempted";
+  let xResult = "not_attempted";
 
   try {
     switch (event.type) {
@@ -231,6 +270,12 @@ Deno.serve(async (req) => {
             tiktokResult = await sendTikTokPurchaseEvent(session, userId);
           } catch (err) {
             tiktokResult = `threw: ${err instanceof Error ? err.message : String(err)}`;
+          }
+
+          try {
+            xResult = await sendXPurchaseEvent(session);
+          } catch (err) {
+            xResult = `threw: ${err instanceof Error ? err.message : String(err)}`;
           }
 
           try {
@@ -267,7 +312,7 @@ Deno.serve(async (req) => {
     return new Response("Webhook handler error", { status: 500 });
   }
 
-  return new Response(JSON.stringify({ received: true, tiktokResult }), {
+  return new Response(JSON.stringify({ received: true, tiktokResult, xResult }), {
     headers: { "Content-Type": "application/json" },
   });
 });
