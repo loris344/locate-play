@@ -21,16 +21,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Two providers, tried in order: serverless egress IPs are shared across
+// every customer of the platform, so a free tier's per-IP daily quota (e.g.
+// ipapi.co's 1000/day) gets exhausted by everyone else's traffic on the
+// same egress, not just this function's own calls - a single provider
+// silently degrades to "Unknown" for good once that happens.
 async function lookupCountry(ip: string | null): Promise<string> {
   if (!ip) return "Unknown";
+
   try {
-    const res = await fetch(`https://ipapi.co/${ip}/json/`);
-    if (!res.ok) return "Unknown";
-    const data = await res.json();
-    return data?.country_name || "Unknown";
+    const res = await fetch(`https://ipwho.is/${ip}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.success !== false && data?.country) return data.country;
+    }
   } catch {
-    return "Unknown";
+    // fall through to the next provider
   }
+
+  try {
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,country`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.status === "success" && data?.country) return data.country;
+    }
+  } catch {
+    // both providers failed
+  }
+
+  return "Unknown";
 }
 
 Deno.serve(async (req) => {
