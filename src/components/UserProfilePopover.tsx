@@ -3,9 +3,14 @@ import { useRouter } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, LogOut, Settings, Trophy, Gamepad2 } from 'lucide-react';
+import { Crown, LogOut, Settings, Trophy, Gamepad2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Kept in sync with ADMIN_EMAIL in src/screens/Admin.tsx - this only hides
+// or shows the link, it grants no access itself (that's enforced in SQL,
+// see supabase/migration-admin-stats.sql).
+const ADMIN_EMAIL = 'lorisjsd@gmail.com';
 
 interface UserStats {
   total_score: number;
@@ -86,6 +91,11 @@ export default function UserProfilePopover({ isSubscribed }: { isSubscribed: boo
         <Button variant="ghost" size="sm" className="w-full" onClick={() => router.push('/account')}>
           <Settings className="h-4 w-4 mr-2" /> My Account
         </Button>
+        {user.email === ADMIN_EMAIL && (
+          <Button variant="ghost" size="sm" className="w-full" onClick={() => router.push('/admin')}>
+            <ShieldCheck className="h-4 w-4 mr-2" /> Admin
+          </Button>
+        )}
         <Button variant="ghost" size="sm" className="w-full" onClick={signOut}>
           <LogOut className="h-4 w-4 mr-2" /> Sign Out
         </Button>
