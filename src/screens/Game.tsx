@@ -260,7 +260,10 @@ export default function Game() {
             </div>
           ) : !user ? (
             <div className="space-y-4">
-              <p className="text-muted-foreground">You've used your free game! Sign up to keep playing (2 free games per day).</p>
+              <p className="text-muted-foreground">
+                That was our free preview — always the same 2 clips. Sign up free to unlock new videos and full
+                5-round games, 2 per day.
+              </p>
               <div className="flex gap-3 justify-center">
                 <Button onClick={() => navigate("/auth?redirect=/play")} className="bg-gradient-hot font-bold">
                   Sign Up
