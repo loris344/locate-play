@@ -260,15 +260,16 @@ export default function Game() {
             </div>
           ) : !user ? (
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                That was our free preview — always the same 2 clips. Sign up free to unlock new videos and full
-                5-round games, 2 per day.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={() => navigate("/auth?redirect=/play")} className="bg-gradient-hot font-bold">
-                  Sign Up
-                </Button>
-                <Button onClick={() => navigate("/")} variant="outline">
+              <h3 className="text-2xl font-black text-gradient-hot">KEEP PLAYING — SIGN UP</h3>
+              <Button
+                onClick={() => navigate("/auth?redirect=/play")}
+                size="lg"
+                className="bg-gradient-hot font-black text-xl px-12 py-6 h-auto shadow-glow animate-pulse-glow hover:scale-105 transition-transform"
+              >
+                SIGN UP
+              </Button>
+              <div>
+                <Button onClick={() => navigate("/")} variant="ghost" size="sm">
                   Home
                 </Button>
               </div>
