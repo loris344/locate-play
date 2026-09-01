@@ -98,13 +98,14 @@ export default function Game() {
       setSessionId(data.sessionId);
       setVideos(shuffled);
       setLoading(false);
-      // Counted at game-start, not completion, matching how the signed-in
-      // daily quota is counted server-side - so quitting mid-game (or
-      // clearing storage/going incognito) can't be used to dodge the free-
-      // game cap. Server-side (game-start's per-IP check) is the real
-      // enforcement; this just keeps the client's own optimistic counter
-      // in sync with it instead of only updating on a full completion.
-      gameAccess.recordGamePlayed();
+      // Recording here (at start, not completion) sounds right for closing
+      // the "quit before round 5" loophole, but breaks the render guard
+      // below (line ~190: !gameAccess.canPlay && currentRound === 0) - that
+      // guard exists to bounce a direct/refreshed load of an already-used
+      // game, but with canPlay flipped false immediately at start, it also
+      // fires on the game the player is legitimately mid-way through right
+      // now, before they've even seen round 1. Recording on completion
+      // avoids that; the actual quota enforcement lives server-side anyway.
     }
 
     startGame();
@@ -146,6 +147,10 @@ export default function Game() {
     setAnswerMarker([data.correctLat, data.correctLng]);
     setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
     setTotalScore((prev) => prev + data.score);
+
+    if (data.finished) {
+      gameAccess.recordGamePlayed();
+    }
   };
 
   const handleTimeUp = useCallback(async () => {
@@ -172,7 +177,11 @@ export default function Game() {
 
     setAnswerMarker([data.correctLat, data.correctLng]);
     setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
-  }, [currentVideo, guessMarker, roundResult, sessionId, submitting]);
+
+    if (data.finished) {
+      gameAccess.recordGamePlayed();
+    }
+  }, [currentVideo, guessMarker, roundResult, sessionId, submitting, gameAccess]);
 
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {

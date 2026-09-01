@@ -13,16 +13,20 @@
 // quitting before the last round no longer lets a free account dodge the
 // 2/day cap (the previous cap only counted completed games in game_scores).
 //
-// Anonymous play used to have NO server-side cap at all — the "1 free game"
-// was purely a localStorage counter in useGameAccess.ts, trivially bypassed
-// by private browsing, clearing storage, or calling this function directly.
-// It's now enforced here too, per-IP (hashed, not stored raw), same shape
-// as the signed-in quota. Anonymous players also always get the same fixed
-// 5 videos (oldest by created_at) instead of a random set: since the whole
-// point of the per-IP cap is that clearing storage/going incognito doesn't
-// get you anything new, repeating the same 5 removes the incentive to
-// bother bypassing it in the first place, and makes signing up (which
-// unlocks the real, varied catalog) the actually useful path.
+// Anonymous play has no server-side cap: the "1 free game" is a
+// localStorage counter in useGameAccess.ts, which real abuse can bypass
+// (private browsing, clearing storage, calling this function directly). A
+// hard per-IP block was tried here and reverted the same day - real users
+// on mobile networks share a small pool of carrier-NAT IPs, so one stranger
+// playing anywhere on the same carrier 403'd everyone else on it. The IP is
+// still hashed and recorded (client_ip_hash) for visibility, just not
+// enforced as a block.
+//
+// The actual anti-abuse measure: anonymous players always get the same
+// fixed 5 videos (oldest by created_at) instead of a random set. Bypassing
+// the counter doesn't get you anything new to watch, so there's nothing to
+// gain from bothering - signing up (which unlocks the real, varied catalog)
+// is the only path to new content.
 //
 // Deploy: supabase functions deploy game-start --no-verify-jwt
 // (no-verify-jwt because anonymous players — who get 1 free game before
@@ -34,7 +38,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const TOTAL_ROUNDS = 5;
 const MAX_DAILY_GAMES = 2;
-const MAX_ANON_GAMES_PER_DAY = 1;
 
 const ipHashSalt = Deno.env.get("IP_HASH_SALT") ?? "";
 
@@ -117,25 +120,15 @@ Deno.serve(async (req) => {
         );
       }
     }
-  } else if (clientIpHash) {
-    // Anonymous: same daily-window cap, keyed by hashed IP instead of
-    // user_id, since there's no account to key on yet.
-    const { startIso, endIso } = utcDayRange();
-    const { count } = await supabaseAdmin
-      .from("game_sessions")
-      .select("*", { count: "exact", head: true })
-      .is("user_id", null)
-      .eq("client_ip_hash", clientIpHash)
-      .gte("created_at", startIso)
-      .lt("created_at", endIso);
-
-    if ((count ?? 0) >= MAX_ANON_GAMES_PER_DAY) {
-      return new Response(
-        JSON.stringify({ error: "Free game limit reached", reason: "signin_required" }),
-        { status: 403, headers: jsonHeaders },
-      );
-    }
   }
+  // NOTE: a per-IP hard cap for anonymous play was here and got reverted -
+  // real users on mobile networks share a small pool of carrier-NAT IPs, so
+  // one stranger playing anywhere on the same carrier could 403 everyone
+  // else on it for the rest of the day. client_ip_hash is still recorded
+  // below for visibility, just not enforced as a block anymore. The fixed
+  // 5-video set (below) is the actual anti-abuse measure: bypassing
+  // anything doesn't get you new content, so there's nothing to gain from
+  // trying.
 
   const { data: allVideos, error } = await supabaseAdmin.from("videos").select("*");
   if (error || !allVideos || allVideos.length === 0) {
