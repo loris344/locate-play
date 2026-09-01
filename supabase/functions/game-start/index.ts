@@ -13,26 +13,31 @@
 // quitting before the last round no longer lets a free account dodge the
 // 2/day cap (the previous cap only counted completed games in game_scores).
 //
-// Anonymous play has no server-side cap: the "1 free game" is a
-// localStorage counter in useGameAccess.ts, which real abuse can bypass
-// (private browsing, clearing storage, calling this function directly). A
+// Players who haven't made a real account still get a Supabase session -
+// app/play/page.tsx calls supabase.auth.signInAnonymously() before
+// mounting this - so `user` below is set for them too (with
+// user.is_anonymous true), just like a real account. That gives this
+// function a stable, real user_id to key the free-game quota on via the
+// exact same game_sessions-count check as signed-in users, instead of IP: a
 // hard per-IP block was tried here and reverted the same day - real users
-// on mobile networks share a small pool of carrier-NAT IPs, so one stranger
-// playing anywhere on the same carrier 403'd everyone else on it. The IP is
-// still hashed and recorded (client_ip_hash) for visibility, just not
-// enforced as a block.
+// on mobile networks share a small pool of carrier-NAT IPs, so one
+// stranger playing anywhere on the same carrier 403'd everyone else on it.
+// client_ip_hash is still recorded for visibility, just not enforced.
 //
-// The actual anti-abuse measure: anonymous players always get the same
-// fixed 5 videos (oldest by created_at) instead of a random set. Bypassing
-// the counter doesn't get you anything new to watch, so there's nothing to
-// gain from bothering - signing up (which unlocks the real, varied catalog)
-// is the only path to new content.
+// Bypassing the anonymous session still works (clearing storage / private
+// browsing gets a fresh one) exactly like the old client-only counter did -
+// what actually removes the incentive to bother is that anonymous players
+// (is_anonymous, or literally no session at all as a fallback) always get
+// the same fixed 5 videos, oldest by created_at, instead of a random set.
+// There's nothing new to see by resetting, so there's nothing to gain -
+// signing up for a real account is the only path to the varied catalog.
 //
 // Deploy: supabase functions deploy game-start --no-verify-jwt
-// (no-verify-jwt because anonymous players — who get 1 free game before
-// signing up — have no Supabase session at all)
+// (no-verify-jwt so a request that lands here before signInAnonymously has
+// resolved - or an anon-auth signup that's disabled/failing - isn't
+// rejected outright by the platform's own JWT check)
 // Secrets: supabase secrets set IP_HASH_SALT=<random hex>
-//          (salts the hashed IP used for the anon per-day cap)
+//          (salts the hashed IP kept in client_ip_hash)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -136,7 +141,7 @@ Deno.serve(async (req) => {
   }
 
   let selected;
-  if (!user) {
+  if (!user || user.is_anonymous) {
     // Fixed, deterministic set for every anonymous game - see header comment.
     selected = [...allVideos]
       .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))

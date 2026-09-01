@@ -39,10 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const applySession = (session: Session | null) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      // An anonymous session (see app/play/page.tsx) exists purely to give
+      // game-start a stable user_id to key the free-game quota on instead
+      // of IP - it's not a real account, so `user` (what the rest of the
+      // app treats as "signed in": the sign-in button, account popover,
+      // username prompt, etc.) stays null for it. `session` above still
+      // carries it, since that's what the ambient Supabase client uses to
+      // authenticate the game-start call itself.
+      setUser(session?.user && !session.user.is_anonymous ? session.user : null);
       setLoading(false);
 
-      if (session?.user && isFreshAccount(session.user)) {
+      if (session?.user && !session.user.is_anonymous && isFreshAccount(session.user)) {
         trackCompleteRegistrationOnce(session.user.id);
       }
     };
