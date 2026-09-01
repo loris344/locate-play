@@ -21,6 +21,9 @@ const tiktokAccessToken = Deno.env.get("TIKTOK_ACCESS_TOKEN");
 const TIKTOK_PIXEL_CODE = "DAA1FHJC77UEOA3O9UC0";
 const xPixelToken = Deno.env.get("X_PIXEL_TOKEN");
 const X_PIXEL_ID = "reumv";
+// ID of the "Subscription Purchase" conversion event created in X Ads
+// Events Manager - not a per-transaction ID (that's conversion_id below).
+const X_EVENT_ID = "tw-reumv-reunt";
 const telegramBotToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const telegramChatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
@@ -181,7 +184,8 @@ async function sendXPurchaseEvent(session: Stripe.Checkout.Session): Promise<str
       conversions: [
         {
           conversion_time: new Date().toISOString(),
-          event_id: session.id,
+          event_id: X_EVENT_ID,
+          conversion_id: session.id,
           event_source_url: "https://geogushing.com/subscription",
           identifiers: [{ hashed_email: await sha256Hex(email) }],
         },
