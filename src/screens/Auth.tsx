@@ -240,12 +240,18 @@ export default function Auth() {
         </div>
 
         {!showForgotPassword && !awaitingConfirmation && (
-          <p className="text-center text-sm text-muted-foreground">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-            <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline">
-              {isLogin ? "Sign up" : "Log in"}
-            </button>
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
+            </p>
+            <Button
+              onClick={() => setIsLogin(!isLogin)}
+              variant="outline"
+              className="w-full font-black border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              {isLogin ? "SIGN UP" : "LOG IN"}
+            </Button>
+          </div>
         )}
       </motion.div>
     </div>
