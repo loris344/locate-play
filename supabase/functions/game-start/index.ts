@@ -1,6 +1,6 @@
-// Issues a new 5-round game session: picks random videos (excluding ones
-// the client says it has already seen) and returns them WITHOUT their
-// answer coordinates.
+// Issues a new 5-round game session: picks videos (excluding ones the
+// client says it has already seen) and returns them WITHOUT their answer
+// coordinates.
 //
 // Previously the client fetched the entire `videos` table directly
 // (RLS: "viewable by everyone"), coordinates included, before any paywall
@@ -13,14 +13,30 @@
 // quitting before the last round no longer lets a free account dodge the
 // 2/day cap (the previous cap only counted completed games in game_scores).
 //
+// Anonymous play used to have NO server-side cap at all — the "1 free game"
+// was purely a localStorage counter in useGameAccess.ts, trivially bypassed
+// by private browsing, clearing storage, or calling this function directly.
+// It's now enforced here too, per-IP (hashed, not stored raw), same shape
+// as the signed-in quota. Anonymous players also always get the same fixed
+// 5 videos (oldest by created_at) instead of a random set: since the whole
+// point of the per-IP cap is that clearing storage/going incognito doesn't
+// get you anything new, repeating the same 5 removes the incentive to
+// bother bypassing it in the first place, and makes signing up (which
+// unlocks the real, varied catalog) the actually useful path.
+//
 // Deploy: supabase functions deploy game-start --no-verify-jwt
 // (no-verify-jwt because anonymous players — who get 1 free game before
 // signing up — have no Supabase session at all)
+// Secrets: supabase secrets set IP_HASH_SALT=<random hex>
+//          (salts the hashed IP used for the anon per-day cap)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const TOTAL_ROUNDS = 5;
 const MAX_DAILY_GAMES = 2;
+const MAX_ANON_GAMES_PER_DAY = 1;
+
+const ipHashSalt = Deno.env.get("IP_HASH_SALT") ?? "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +66,16 @@ async function getUser(authHeader: string | null) {
   return user;
 }
 
+function getClientIp(req: Request): string | null {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip");
+}
+
+async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(`${ipHashSalt}:${ip}`);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -61,6 +87,8 @@ Deno.serve(async (req) => {
   const seen: string[] = Array.isArray(seenVideoIds) ? seenVideoIds : [];
 
   const user = await getUser(req.headers.get("Authorization"));
+  const clientIp = getClientIp(req);
+  const clientIpHash = clientIp ? await hashIp(clientIp) : null;
 
   if (user) {
     const { data: sub } = await supabaseAdmin
@@ -83,8 +111,29 @@ Deno.serve(async (req) => {
         .lt("created_at", endIso);
 
       if ((count ?? 0) >= MAX_DAILY_GAMES) {
-        return new Response(JSON.stringify({ error: "Daily free game limit reached" }), { status: 403, headers: jsonHeaders });
+        return new Response(
+          JSON.stringify({ error: "Daily free game limit reached", reason: "paywall" }),
+          { status: 403, headers: jsonHeaders },
+        );
       }
+    }
+  } else if (clientIpHash) {
+    // Anonymous: same daily-window cap, keyed by hashed IP instead of
+    // user_id, since there's no account to key on yet.
+    const { startIso, endIso } = utcDayRange();
+    const { count } = await supabaseAdmin
+      .from("game_sessions")
+      .select("*", { count: "exact", head: true })
+      .is("user_id", null)
+      .eq("client_ip_hash", clientIpHash)
+      .gte("created_at", startIso)
+      .lt("created_at", endIso);
+
+    if ((count ?? 0) >= MAX_ANON_GAMES_PER_DAY) {
+      return new Response(
+        JSON.stringify({ error: "Free game limit reached", reason: "signin_required" }),
+        { status: 403, headers: jsonHeaders },
+      );
     }
   }
 
@@ -93,17 +142,24 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "No videos available" }), { status: 500, headers: jsonHeaders });
   }
 
-  let available = allVideos.filter((v) => !seen.includes(v.id));
-  if (available.length < TOTAL_ROUNDS) available = allVideos;
-  if (available.length < TOTAL_ROUNDS) {
-    return new Response(JSON.stringify({ error: "Not enough videos available" }), { status: 500, headers: jsonHeaders });
+  let selected;
+  if (!user) {
+    // Fixed, deterministic set for every anonymous game - see header comment.
+    selected = [...allVideos]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+      .slice(0, TOTAL_ROUNDS);
+  } else {
+    let available = allVideos.filter((v) => !seen.includes(v.id));
+    if (available.length < TOTAL_ROUNDS) available = allVideos;
+    if (available.length < TOTAL_ROUNDS) {
+      return new Response(JSON.stringify({ error: "Not enough videos available" }), { status: 500, headers: jsonHeaders });
+    }
+    selected = [...available].sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
   }
-
-  const shuffled = [...available].sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
 
   const { data: session, error: sessionError } = await supabaseAdmin
     .from("game_sessions")
-    .insert({ user_id: user?.id ?? null, video_ids: shuffled.map((v) => v.id) })
+    .insert({ user_id: user?.id ?? null, video_ids: selected.map((v) => v.id), client_ip_hash: clientIpHash })
     .select("id")
     .single();
 
@@ -111,7 +167,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "Could not start game" }), { status: 500, headers: jsonHeaders });
   }
 
-  const videos = shuffled.map(({ latitude: _lat, longitude: _lng, ...rest }) => rest);
+  const videos = selected.map(({ latitude: _lat, longitude: _lng, ...rest }) => rest);
 
   return new Response(JSON.stringify({ sessionId: session.id, videos }), { headers: jsonHeaders });
 });

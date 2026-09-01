@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, Video } from "@/lib/supabase";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameAccess } from "@/hooks/useGameAccess";
 import GameMap from "@/components/GameMap";
@@ -63,7 +64,24 @@ export default function Game() {
       const { data, error } = await supabase.functions.invoke("game-start", { body: { seenVideoIds: seen } });
 
       if (error || !data?.videos || !data?.sessionId) {
-        setError(data?.error || "Could not start the game. Please try again.");
+        // The client SDK doesn't parse the body on a non-2xx response - the
+        // "reason" game-start sends (why: no more free games today) only
+        // ever reaches us this way, not through `data`.
+        if (error instanceof FunctionsHttpError) {
+          const body = await error.context.json().catch(() => null);
+          if (body?.reason === "signin_required") {
+            navigate("/auth?redirect=%2Fplay");
+            return;
+          }
+          if (body?.reason === "paywall") {
+            navigate("/subscription");
+            return;
+          }
+          setError(body?.error || "Could not start the game. Please try again.");
+          setLoading(false);
+          return;
+        }
+        setError("Could not start the game. Please try again.");
         setLoading(false);
         return;
       }
@@ -80,6 +98,13 @@ export default function Game() {
       setSessionId(data.sessionId);
       setVideos(shuffled);
       setLoading(false);
+      // Counted at game-start, not completion, matching how the signed-in
+      // daily quota is counted server-side - so quitting mid-game (or
+      // clearing storage/going incognito) can't be used to dodge the free-
+      // game cap. Server-side (game-start's per-IP check) is the real
+      // enforcement; this just keeps the client's own optimistic counter
+      // in sync with it instead of only updating on a full completion.
+      gameAccess.recordGamePlayed();
     }
 
     startGame();
@@ -121,10 +146,6 @@ export default function Game() {
     setAnswerMarker([data.correctLat, data.correctLng]);
     setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
     setTotalScore((prev) => prev + data.score);
-
-    if (data.finished) {
-      gameAccess.recordGamePlayed();
-    }
   };
 
   const handleTimeUp = useCallback(async () => {
@@ -151,11 +172,7 @@ export default function Game() {
 
     setAnswerMarker([data.correctLat, data.correctLng]);
     setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
-
-    if (data.finished) {
-      gameAccess.recordGamePlayed();
-    }
-  }, [currentVideo, guessMarker, roundResult, sessionId, submitting, gameAccess]);
+  }, [currentVideo, guessMarker, roundResult, sessionId, submitting]);
 
   const handleNextRound = () => {
     if (currentRound + 1 >= TOTAL_ROUNDS) {

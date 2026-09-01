@@ -42,6 +42,10 @@ export default function Privacy() {
                 to run the leaderboard.
               </li>
               <li>
+                <span className="font-semibold">Abuse prevention:</span> if you play without an account, we derive a
+                salted hash of your IP address to enforce the daily free-game limit. We don&apos;t store your raw IP.
+              </li>
+              <li>
                 <span className="font-semibold">Payment data:</span> if you subscribe, payment is processed by
                 Stripe. We never see or store your card details - only your subscription status.
               </li>
