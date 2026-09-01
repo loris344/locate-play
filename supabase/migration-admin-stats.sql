@@ -112,9 +112,9 @@ begin
   )
   select
     ds.d as day,
-    coalesce((select count(*) from auth.users u where u.created_at::date = ds.d), 0) as signups,
-    coalesce((select count(*) from public.game_sessions gs where gs.created_at::date = ds.d), 0) as games_started,
-    coalesce((select count(*) from public.game_scores gsc where gsc.created_at::date = ds.d), 0) as games_completed
+    coalesce((select count(*) from auth.users u where u.created_at::date = ds.d), 0)::bigint as signups,
+    coalesce((select count(*) from public.game_sessions gs where gs.created_at::date = ds.d), 0)::bigint as games_started,
+    coalesce((select count(*) from public.game_scores gsc where gsc.created_at::date = ds.d), 0)::bigint as games_completed
   from days_series ds
   order by ds.d;
 end;
@@ -152,7 +152,7 @@ begin
   select
     p.id as user_id,
     p.username,
-    u.email,
+    u.email::text as email,
     p.avatar_url,
     count(gs.id)::bigint as games_played,
     coalesce(sum(gs.total_score), 0)::bigint as total_score,
