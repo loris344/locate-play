@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -108,20 +107,16 @@ function RequireUsername({ children }: { children: React.ReactNode }) {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <LazyPostHog />
-          <RequireUsername>
-            <GlobalNav />
-            {children}
-          </RequireUsername>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <LazyPostHog />
+        <RequireUsername>
+          <GlobalNav />
+          {children}
+        </RequireUsername>
+      </TooltipProvider>
+    </AuthProvider>
   );
 }

@@ -45,8 +45,6 @@
   ],
   "exclude": [
     "node_modules",
-    "playwright.config.ts",
-    "playwright-fixture.ts",
     "supabase/functions"
   ]
 }
