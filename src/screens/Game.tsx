@@ -18,7 +18,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, Trophy, Loader2, Crown, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const TOTAL_ROUNDS = 5;
 const SEEN_KEY = "geogushing_seen_videos";
 
 type PlayableVideo = Omit<Video, "latitude" | "longitude">;
@@ -112,6 +111,9 @@ export default function Game() {
   }, []);
 
   const currentVideo = videos[currentRound];
+  // Not a fixed 5 - game-start gives anonymous sessions 2 rounds (a taste,
+  // not the full game) and everyone else 5.
+  const totalRounds = videos.length;
 
   const handleGuess = useCallback(
     (lat: number, lng: number) => {
@@ -184,7 +186,7 @@ export default function Game() {
   }, [currentVideo, guessMarker, roundResult, sessionId, submitting, gameAccess]);
 
   const handleNextRound = () => {
-    if (currentRound + 1 >= TOTAL_ROUNDS) {
+    if (currentRound + 1 >= totalRounds) {
       setGameOver(true);
       return;
     }
@@ -224,7 +226,7 @@ export default function Game() {
   }
 
   if (gameOver) {
-    const avgScore = Math.round(totalScore / TOTAL_ROUNDS);
+    const avgScore = Math.round(totalScore / totalRounds);
     const canPlayNext = gameAccess.canPlay;
 
     return (
@@ -238,7 +240,7 @@ export default function Game() {
           <Trophy className="w-16 h-16 text-secondary mx-auto" />
           <h2 className="text-4xl font-black text-gradient-hot">GAME OVER</h2>
           <div className="text-5xl font-black text-foreground">{totalScore.toLocaleString()}</div>
-          <p className="text-muted-foreground">Total score across {TOTAL_ROUNDS} rounds</p>
+          <p className="text-muted-foreground">Total score across {totalRounds} rounds</p>
           <p className="text-secondary font-bold">
             {avgScore >= 4000
               ? "🔥 You're a legend!"
@@ -290,7 +292,7 @@ export default function Game() {
             actorName={currentVideo.actor_name}
             actorPhotoUrl={currentVideo.actor_photo_url}
             round={currentRound + 1}
-            totalRounds={TOTAL_ROUNDS}
+            totalRounds={totalRounds}
           />
         )}
       </AnimatePresence>
@@ -310,7 +312,7 @@ export default function Game() {
             onElapsedChange={(e) => { elapsedRef.current = e; }}
           />
           <span className="text-muted-foreground font-bold text-xs lg:text-sm">
-            <span className="text-foreground">{currentRound + 1}</span>/{TOTAL_ROUNDS}
+            <span className="text-foreground">{currentRound + 1}</span>/{totalRounds}
           </span>
           <span className="text-secondary font-black text-sm lg:text-lg">{totalScore.toLocaleString()}</span>
         </div>
@@ -375,7 +377,7 @@ export default function Game() {
               onClick={handleNextRound}
               className="flex-1 bg-secondary text-secondary-foreground font-black text-lg h-12"
             >
-              {currentRound + 1 >= TOTAL_ROUNDS ? "SEE RESULTS" : "NEXT ROUND"}
+              {currentRound + 1 >= totalRounds ? "SEE RESULTS" : "NEXT ROUND"}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           )}

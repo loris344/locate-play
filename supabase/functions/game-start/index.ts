@@ -1,6 +1,10 @@
-// Issues a new 5-round game session: picks videos (excluding ones the
-// client says it has already seen) and returns them WITHOUT their answer
-// coordinates.
+// Issues a new game session: picks videos (excluding ones the client says
+// it has already seen) and returns them WITHOUT their answer coordinates.
+// A signed-in/subscribed session is 5 rounds; an anonymous one is a 2-round
+// taste (see below) - the round count isn't a fixed constant anywhere else,
+// it's just however many video_ids ended up in the session
+// (submit-round's "finished" check and the client's UI both read
+// video_ids.length / videos.length instead of a hardcoded 5).
 //
 // Previously the client fetched the entire `videos` table directly
 // (RLS: "viewable by everyone"), coordinates included, before any paywall
@@ -28,9 +32,10 @@
 // browsing gets a fresh one) exactly like the old client-only counter did -
 // what actually removes the incentive to bother is that anonymous players
 // (is_anonymous, or literally no session at all as a fallback) always get
-// the same fixed 5 videos, oldest by created_at, instead of a random set.
+// the same fixed 2 videos, oldest by created_at, instead of a random set.
 // There's nothing new to see by resetting, so there's nothing to gain -
-// signing up for a real account is the only path to the varied catalog.
+// signing up for a real account is the only path to the varied catalog
+// (and the full 5-round game, twice a day).
 //
 // Deploy: supabase functions deploy game-start --no-verify-jwt
 // (no-verify-jwt so a request that lands here before signInAnonymously has
@@ -42,6 +47,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const TOTAL_ROUNDS = 5;
+const ANON_ROUNDS = 2;
 const MAX_DAILY_GAMES = 2;
 
 const ipHashSalt = Deno.env.get("IP_HASH_SALT") ?? "";
@@ -143,9 +149,11 @@ Deno.serve(async (req) => {
   let selected;
   if (!user || user.is_anonymous) {
     // Fixed, deterministic set for every anonymous game - see header comment.
+    // Only 2 rounds (not the full 5) - a short taste, not the whole game,
+    // before signing up becomes the only way to keep playing.
     selected = [...allVideos]
       .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
-      .slice(0, TOTAL_ROUNDS);
+      .slice(0, ANON_ROUNDS);
   } else {
     let available = allVideos.filter((v) => !seen.includes(v.id));
     if (available.length < TOTAL_ROUNDS) available = allVideos;

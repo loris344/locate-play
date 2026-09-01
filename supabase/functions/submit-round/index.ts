@@ -15,7 +15,6 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
-const TOTAL_ROUNDS = 5;
 const MAX_SCORE_PER_ROUND = 5000;
 const ROUND_TIME = 120;
 const TIMEOUT_DISTANCE_KM = 20000;
@@ -122,7 +121,10 @@ Deno.serve(async (req) => {
 
   const roundsCompleted = session.rounds_completed + 1;
   const totalScore = session.total_score + score;
-  const finished = roundsCompleted >= TOTAL_ROUNDS;
+  // Not a fixed constant: game-start gives anonymous sessions 2 rounds and
+  // everyone else 5, so however many video_ids ended up on this specific
+  // session is the actual round count to finish against.
+  const finished = roundsCompleted >= session.video_ids.length;
 
   // Optimistic-concurrency guard: only applies if rounds_completed still
   // matches what we just read, so two parallel requests for the same
