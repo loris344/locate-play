@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const MIN_PLAYERS = 340;
-const MAX_PLAYERS = 13700;
+const MIN_PLAYERS = 100;
+const MAX_PLAYERS = 4100;
 const MID_PLAYERS = (MIN_PLAYERS + MAX_PLAYERS) / 2;
 const AMPLITUDE = (MAX_PLAYERS - MIN_PLAYERS) / 2;
 // Quietest around 9am US Eastern, peaking 12h later at 9pm.
