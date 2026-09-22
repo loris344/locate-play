@@ -15,27 +15,44 @@ const MIN_GAP_MS = 1500;
 // Supabase session once and reconnects (covers an expired token, and a
 // username picked after the current token was issued).
 const CLOSE_UNAUTHORIZED = 4001;
+// The client pings every 30s (every 60s at worst in a throttled background
+// tab); a socket silent for longer than this is a dropped connection that
+// never sent a close, and is left out of the "who's here" list.
+const STALE_MS = 120_000;
+const AVATAR_VERSION = /^[0-9a-z]{1,20}$/;
+const USER_ID = /^[0-9a-f-]{36}$/;
 
 interface ChatUser {
   userId: string;
   username: string;
+  // The ?v= cache-buster of the player's profile photo (see Account.tsx),
+  // or null when they haven't uploaded one.
+  avatarV: string | null;
   isAdmin: boolean;
+  connectedAt: number;
 }
 
-// A type alias, not an interface: SqlStorage.exec<T> needs T to be
+// Type aliases, not interfaces: SqlStorage.exec<T> needs T to be
 // assignable to a string-indexed record.
 type ChatMessage = {
   id: string;
   user_id: string;
   username: string;
+  avatar_v: string | null;
   content: string;
   created_at: number;
+};
+
+type PresentUser = {
+  user_id: string;
+  username: string;
+  avatar_v: string | null;
 };
 
 // --- Supabase access token verification -----------------------------------
 // The project signs access tokens with an asymmetric (ES256) key, so they can
 // be checked here with its public key alone. The JWKS is fetched at most
-// once per isolate (and edge-cached for an hour), never per message.
+// once per isolate, never per message.
 
 interface Claims {
   sub?: string;
@@ -58,9 +75,7 @@ async function getSigningKey(supabaseUrl: string, kid: string): Promise<CryptoKe
   const cached = signingKeys.get(kid);
   if (cached) return cached;
 
-  const res = await fetch(`${supabaseUrl}/auth/v1/.well-known/jwks.json`, {
-    cf: { cacheTtl: 3600, cacheEverything: true },
-  });
+  const res = await fetch(`${supabaseUrl}/auth/v1/.well-known/jwks.json`);
   if (!res.ok) return null;
   const { keys } = await res.json<{ keys: (JsonWebKey & { kid: string })[] }>();
   for (const jwk of keys) {
@@ -73,7 +88,7 @@ async function getSigningKey(supabaseUrl: string, kid: string): Promise<CryptoKe
   return signingKeys.get(kid) ?? null;
 }
 
-async function verifyToken(token: string, env: Env): Promise<ChatUser | null> {
+async function verifyToken(token: string, env: Env): Promise<Omit<ChatUser, "avatarV" | "connectedAt"> | null> {
   const [headerPart, payloadPart, signaturePart] = token.split(".");
   if (!headerPart || !payloadPart || !signaturePart) return null;
 
@@ -108,6 +123,35 @@ async function verifyToken(token: string, env: Env): Promise<ChatUser | null> {
   }
 }
 
+// --- Profile photos ---------------------------------------------------------
+// Served from Cloudflare's cache in front of the Supabase avatars bucket, so
+// each photo version is pulled from Supabase once per data center instead
+// of once per viewer. The version is part of the URL, so a new upload is
+// a new cache entry and old versions are cached forever.
+
+async function serveAvatar(request: Request, ctx: ExecutionContext, userId: string, env: Env): Promise<Response> {
+  const cache = caches.default;
+  const hit = await cache.match(request);
+  if (hit) return hit;
+
+  const v = new URL(request.url).searchParams.get("v") ?? "";
+  if (!AVATAR_VERSION.test(v)) return new Response("Not found", { status: 404 });
+
+  const upstream = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/avatars/${userId}/avatar.jpg?v=${v}`);
+  const response = upstream.ok
+    ? new Response(upstream.body, {
+        headers: {
+          "Content-Type": upstream.headers.get("Content-Type") ?? "image/jpeg",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      })
+    : // Cached too (briefly), so a missing photo doesn't hit Supabase on every view.
+      new Response("Not found", { status: 404, headers: { "Cache-Control": "public, max-age=3600" } });
+
+  ctx.waitUntil(cache.put(request, response.clone()));
+  return response;
+}
+
 // --- Worker entry: /api/chat* ---------------------------------------------
 
 function rejectSocket(): Response {
@@ -121,14 +165,32 @@ function rejectSocket(): Response {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    const avatarUserId = url.pathname.match(/^\/api\/chat\/avatar\/([^/]+)$/)?.[1];
+    if (avatarUserId && request.method === "GET") {
+      if (!USER_ID.test(avatarUserId)) return new Response("Not found", { status: 404 });
+      return serveAvatar(request, ctx, avatarUserId, env);
+    }
+
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("Expected a WebSocket", { status: 426 });
     }
 
-    const token = new URL(request.url).searchParams.get("token");
-    const user = token ? await verifyToken(token, env) : null;
-    if (!user) return rejectSocket();
+    const token = url.searchParams.get("token");
+    const verified = token ? await verifyToken(token, env) : null;
+    if (!verified) return rejectSocket();
+
+    // The photo version comes from the client (it reads its own profile).
+    // It can only ever point at this user's own avatar path, so there's
+    // nothing to spoof.
+    const v = url.searchParams.get("v");
+    const user: ChatUser = {
+      ...verified,
+      avatarV: v && AVATAR_VERSION.test(v) ? v : null,
+      connectedAt: Date.now(),
+    };
 
     // Verified here, in the Worker, so unauthenticated sockets never reach
     // (or wake) the Durable Object. It's only reachable through this
@@ -155,6 +217,12 @@ export class ChatRoom extends DurableObject<Env> {
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`);
+    // avatar_v arrived after the room first launched.
+    const hasAvatarColumn = this.sql
+      .exec("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'avatar_v'")
+      .toArray().length > 0;
+    if (!hasAvatarColumn) this.sql.exec("ALTER TABLE messages ADD COLUMN avatar_v TEXT");
+
     // Keep-alive pings are answered by the runtime without waking the object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
@@ -166,6 +234,8 @@ export class ChatRoom extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment(user);
     server.send(JSON.stringify({ type: "history", messages: this.history() }));
+    // Everyone (the newcomer included) gets the updated "who's here" list.
+    this.broadcastPresence();
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -195,14 +265,16 @@ export class ChatRoom extends DurableObject<Env> {
         id: crypto.randomUUID(),
         user_id: user.userId,
         username: user.username,
+        avatar_v: user.avatarV,
         content,
         created_at: now,
       };
       this.sql.exec(
-        "INSERT INTO messages (id, user_id, username, content, created_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO messages (id, user_id, username, avatar_v, content, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         message.id,
         message.user_id,
         message.username,
+        message.avatar_v,
         message.content,
         message.created_at,
       );
@@ -229,21 +301,46 @@ export class ChatRoom extends DurableObject<Env> {
     } catch {
       // Already closed, or a reserved code (1005/1006) that can't be echoed.
     }
+    this.broadcastPresence(ws);
+  }
+
+  async webSocketError(ws: WebSocket) {
+    this.broadcastPresence(ws);
   }
 
   private history(): ChatMessage[] {
     return this.sql
       .exec<ChatMessage>(
-        "SELECT id, user_id, username, content, created_at FROM messages ORDER BY created_at DESC LIMIT ?",
+        "SELECT id, user_id, username, avatar_v, content, created_at FROM messages ORDER BY created_at DESC LIMIT ?",
         HISTORY_LIMIT,
       )
       .toArray()
       .reverse();
   }
 
-  private broadcast(payload: unknown) {
+  // One entry per player, however many tabs they have open.
+  private presence(leaving?: WebSocket): PresentUser[] {
+    const now = Date.now();
+    const users = new Map<string, PresentUser>();
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws === leaving) continue;
+      const user = ws.deserializeAttachment() as ChatUser | null;
+      if (!user) continue;
+      const lastPing = this.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? 0;
+      if (Math.max(user.connectedAt, lastPing) < now - STALE_MS) continue;
+      users.set(user.userId, { user_id: user.userId, username: user.username, avatar_v: user.avatarV });
+    }
+    return [...users.values()];
+  }
+
+  private broadcastPresence(leaving?: WebSocket) {
+    this.broadcast({ type: "presence", users: this.presence(leaving) }, leaving);
+  }
+
+  private broadcast(payload: unknown, skip?: WebSocket) {
     const data = JSON.stringify(payload);
     for (const ws of this.ctx.getWebSockets()) {
+      if (ws === skip) continue;
       try {
         ws.send(data);
       } catch {

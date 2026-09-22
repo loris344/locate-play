@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck, MessageCircle } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck, MessagesSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import ActorNameTicker from '@/components/ActorNameTicker';
@@ -21,9 +21,6 @@ export default function Index() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Top bar */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
-        <Button variant="outline" size="sm" onClick={() => navigate('/chat')}>
-          <MessageCircle className="h-4 w-4 mr-1" /> Chat
-        </Button>
         {user ? (
           <>
             <UserProfilePopover isSubscribed={isSubscribed} />
@@ -100,7 +97,7 @@ export default function Index() {
           initial={{ y: 20 }}
           animate={{ y: 0 }}
           transition={{ delay: 0.9 }}
-          className="flex gap-3"
+          className="grid grid-cols-[1fr_auto] gap-3"
         >
           <Button
             onClick={() => navigate('/play')}
@@ -116,6 +113,18 @@ export default function Index() {
             className="font-black text-lg px-6 py-6 h-auto hover:scale-105 transition-transform"
           >
             <Trophy className="mr-2 h-5 w-5 text-secondary" /> TOP
+          </Button>
+          <Button
+            onClick={() => navigate('/lounge')}
+            size="lg"
+            variant="outline"
+            className="col-span-2 font-black text-lg px-6 py-6 h-auto border-2 border-accent/60 hover:scale-105 transition-transform"
+          >
+            <span className="relative flex h-2.5 w-2.5 mr-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            </span>
+            <MessagesSquare className="mr-2 h-5 w-5 text-accent" /> PLAYER LOUNGE
           </Button>
         </motion.div>
 
