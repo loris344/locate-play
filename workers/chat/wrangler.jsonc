@@ -1,9 +1,10 @@
-// The /chat room's backend: a Worker on a route of the existing
+// The /lounge room's backend: a Worker on a route of the existing
 // Cloudflare-proxied domain (the site itself is served by GitHub Pages;
 // only /api/chat* is intercepted here) plus one Durable Object holding the
-// room's sockets and its last messages in SQLite. Nothing here talks to
-// Supabase's database, Realtime or storage - Supabase access tokens are
-// verified locally against the project's public signing key.
+// room's sockets. Messages are relayed live and never stored. Nothing here
+// uses Supabase's database or Realtime - access tokens are verified locally
+// against the project's public signing key, and profile photos are pulled
+// from Supabase storage only on a Cloudflare cache miss.
 //
 // Deploy: cd workers/chat && npm install && npm run deploy
 {

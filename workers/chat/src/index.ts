@@ -6,8 +6,10 @@ interface Env {
   ADMIN_EMAIL: string;
 }
 
-const HISTORY_LIMIT = 100;
 const MAX_LENGTH = 500;
+// How many past messages the room remembers the author of (not the text),
+// so they can still be deleted by their author or the admin.
+const SENT_LOG_LIMIT = 200;
 // A bit under the client's own 2s cooldown, so network jitter between two
 // sends the client allowed doesn't get one of them rejected here.
 const MIN_GAP_MS = 1500;
@@ -32,22 +34,20 @@ interface ChatUser {
   connectedAt: number;
 }
 
-// Type aliases, not interfaces: SqlStorage.exec<T> needs T to be
-// assignable to a string-indexed record.
-type ChatMessage = {
+interface ChatMessage {
   id: string;
   user_id: string;
   username: string;
   avatar_v: string | null;
   content: string;
   created_at: number;
-};
+}
 
-type PresentUser = {
+interface PresentUser {
   user_id: string;
   username: string;
   avatar_v: string | null;
-};
+}
 
 // --- Supabase access token verification -----------------------------------
 // The project signs access tokens with an asymmetric (ES256) key, so they can
@@ -210,18 +210,16 @@ export class ChatRoom extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS messages (
+    // Messages are relayed live and never shown to anyone who joins later,
+    // so their text is never stored - only who sent which one and when, for
+    // delete permission and the rate limit.
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS sent (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      content TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`);
-    // avatar_v arrived after the room first launched.
-    const hasAvatarColumn = this.sql
-      .exec("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'avatar_v'")
-      .toArray().length > 0;
-    if (!hasAvatarColumn) this.sql.exec("ALTER TABLE messages ADD COLUMN avatar_v TEXT");
+    // The room used to keep, and replay to newcomers, its last 100 messages.
+    this.sql.exec("DROP TABLE IF EXISTS messages");
 
     // Keep-alive pings are answered by the runtime without waking the object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
@@ -233,7 +231,8 @@ export class ChatRoom extends DurableObject<Env> {
     // Hibernatable: idle sockets don't keep the object (and its billing) awake.
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment(user);
-    server.send(JSON.stringify({ type: "history", messages: this.history() }));
+    // No history: a newcomer only sees what's said from now on.
+    server.send(JSON.stringify({ type: "welcome" }));
     // Everyone (the newcomer included) gets the updated "who's here" list.
     this.broadcastPresence();
     return new Response(null, { status: 101, webSocket: client });
@@ -254,7 +253,7 @@ export class ChatRoom extends DurableObject<Env> {
 
       const now = Date.now();
       const last = this.sql
-        .exec<{ last: number | null }>("SELECT MAX(created_at) AS last FROM messages WHERE user_id = ?", user.userId)
+        .exec<{ last: number | null }>("SELECT MAX(created_at) AS last FROM sent WHERE user_id = ?", user.userId)
         .one().last;
       if (last && now - last < MIN_GAP_MS) {
         ws.send(JSON.stringify({ type: "error", error: "Slow down - wait a couple of seconds between messages" }));
@@ -269,28 +268,19 @@ export class ChatRoom extends DurableObject<Env> {
         content,
         created_at: now,
       };
+      this.sql.exec("INSERT INTO sent (id, user_id, created_at) VALUES (?, ?, ?)", message.id, message.user_id, now);
       this.sql.exec(
-        "INSERT INTO messages (id, user_id, username, avatar_v, content, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        message.id,
-        message.user_id,
-        message.username,
-        message.avatar_v,
-        message.content,
-        message.created_at,
-      );
-      // Only the latest HISTORY_LIMIT messages are ever shown, so that's all we keep.
-      this.sql.exec(
-        "DELETE FROM messages WHERE created_at < (SELECT created_at FROM messages ORDER BY created_at DESC LIMIT 1 OFFSET ?)",
-        HISTORY_LIMIT - 1,
+        "DELETE FROM sent WHERE created_at < (SELECT created_at FROM sent ORDER BY created_at DESC LIMIT 1 OFFSET ?)",
+        SENT_LOG_LIMIT - 1,
       );
       this.broadcast({ type: "message", message });
       return;
     }
 
     if (msg.type === "delete" && typeof msg.id === "string") {
-      const row = this.sql.exec<{ user_id: string }>("SELECT user_id FROM messages WHERE id = ?", msg.id).toArray()[0];
+      const row = this.sql.exec<{ user_id: string }>("SELECT user_id FROM sent WHERE id = ?", msg.id).toArray()[0];
       if (!row || (row.user_id !== user.userId && !user.isAdmin)) return;
-      this.sql.exec("DELETE FROM messages WHERE id = ?", msg.id);
+      this.sql.exec("DELETE FROM sent WHERE id = ?", msg.id);
       this.broadcast({ type: "deleted", id: msg.id });
     }
   }
@@ -306,16 +296,6 @@ export class ChatRoom extends DurableObject<Env> {
 
   async webSocketError(ws: WebSocket) {
     this.broadcastPresence(ws);
-  }
-
-  private history(): ChatMessage[] {
-    return this.sql
-      .exec<ChatMessage>(
-        "SELECT id, user_id, username, avatar_v, content, created_at FROM messages ORDER BY created_at DESC LIMIT ?",
-        HISTORY_LIMIT,
-      )
-      .toArray()
-      .reverse();
   }
 
   // One entry per player, however many tabs they have open.

@@ -21,7 +21,9 @@ const AVATAR_BASE = `${CHAT_URL.replace(/^ws/, 'http')}/avatar/`;
 // the delete button on everyone's messages, the permission itself is
 // enforced by the chat Worker.
 const ADMIN_EMAIL = 'lorisjsd@gmail.com';
-const HISTORY_LIMIT = 100;
+// Messages kept on screen; older ones scroll away for good (the room never
+// replays anything, see workers/chat).
+const MAX_ON_SCREEN = 100;
 const MAX_LENGTH = 500;
 const MIN_GAP_MS = 2000;
 const PING_INTERVAL_MS = 30_000;
@@ -95,7 +97,7 @@ export default function Lounge() {
   const lastSentAt = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
   // Only auto-scroll on new messages while the reader is already at the
-  // bottom, so scrolling up to read history isn't yanked back down.
+  // bottom, so scrolling up to read earlier messages isn't yanked back down.
   const stickToBottom = useRef(true);
 
   const userId = user?.id;
@@ -129,10 +131,10 @@ export default function Lounge() {
       socket.onmessage = (event) => {
         if (event.data === 'pong') return;
         const data = JSON.parse(event.data);
-        if (data.type === 'history') {
-          // Sent on every (re)connect: replaces the list, so anything
-          // posted or deleted while disconnected is reflected.
-          setMessages(data.messages);
+        if (data.type === 'welcome') {
+          // Sent on every (re)connect, with no history: whoever joins only
+          // sees what's said from then on, and messages already on screen
+          // stay put across a reconnect.
           setLoading(false);
           setJoinFailed(false);
           refreshedAfterReject = false;
@@ -140,7 +142,7 @@ export default function Lounge() {
           setPresent(data.users);
         } else if (data.type === 'message') {
           setMessages((current) =>
-            [...current.filter((m) => m.id !== data.message.id), data.message].slice(-HISTORY_LIMIT),
+            [...current.filter((m) => m.id !== data.message.id), data.message].slice(-MAX_ON_SCREEN),
           );
         } else if (data.type === 'deleted') {
           setMessages((current) => current.filter((m) => m.id !== data.id));
@@ -329,7 +331,7 @@ export default function Lounge() {
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Nobody has said anything yet. Say hi! 👋
+              You&apos;re in! Only messages sent from now on show up here. Say hi! 👋
             </div>
           ) : (
             messages.map((m) => {
