@@ -33,7 +33,7 @@ function ResetCountdown() {
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <Clock className="w-4 h-4" />
-      <span>New free games in <span className="font-bold text-foreground">{timeLeft}</span></span>
+      <span>New free game in <span className="font-bold text-foreground">{timeLeft}</span></span>
     </div>
   );
 }
@@ -128,9 +128,9 @@ export default function Subscription() {
                     : subscriptionEnd
                       ? `Unlimited games • Renews ${new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
                       : 'Unlimited games'
-                  : gamesPlayedToday >= 2
-                    ? `Daily free limit reached (${Math.min(gamesPlayedToday, 2)}/2).`
-                    : `${gamesPlayedToday}/2 free daily games used`}
+                  : gamesPlayedToday >= 1
+                    ? `Daily free limit reached (${Math.min(gamesPlayedToday, 1)}/1).`
+                    : `${gamesPlayedToday}/1 free daily game used`}
               </p>
               {isSubscribed && subscriptionEnd && (() => {
                 const days = Math.max(0, Math.ceil((new Date(subscriptionEnd).getTime() - Date.now()) / 86400000));
@@ -143,7 +143,7 @@ export default function Subscription() {
               })()}
             </div>
           </div>
-          {!isSubscribed && gamesPlayedToday >= 2 && <ResetCountdown />}
+          {!isSubscribed && gamesPlayedToday >= 1 && <ResetCountdown />}
         </motion.div>
 
         {isSubscribed && (

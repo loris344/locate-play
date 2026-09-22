@@ -5,7 +5,7 @@
 --
 -- Only the service role key (used exclusively by the edge functions) can
 -- insert or update rows. Signed-in users may only read their own rows,
--- needed so the frontend can show "X/2 free games used today" without a
+-- needed so the frontend can show "X/1 free game used today" without a
 -- round trip through an edge function.
 
 create table if not exists public.game_sessions (

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const ANON_GAME_KEY = 'geogushing_anon_games';
 const USER_GAME_KEY_PREFIX = 'geogushing_user_games_';
 const MAX_ANON_GAMES = 1;
-const MAX_DAILY_GAMES = 2;
+const MAX_DAILY_GAMES = 1;
 
 interface GameAccess {
   canPlay: boolean;

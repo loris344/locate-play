@@ -25,7 +25,7 @@ export default function StripePaywall({ reason }: StripePaywallProps) {
           <LogIn className="w-16 h-16 text-primary mx-auto" />
           <h2 className="text-3xl font-black text-gradient-hot">CREATE YOUR ACCOUNT</h2>
           <p className="text-muted-foreground">
-            You've used your free game! Sign up to keep playing (2 free games per day).
+            You've used your free game! Sign up to keep playing (1 free game per day).
           </p>
           <div className="flex gap-3 justify-center">
             <Button onClick={() => navigate('/auth?redirect=/play')} className="bg-gradient-hot font-black text-lg px-8 py-3 h-auto">
@@ -51,7 +51,7 @@ export default function StripePaywall({ reason }: StripePaywallProps) {
         <Lock className="w-16 h-16 text-secondary mx-auto" />
         <h2 className="text-3xl font-black text-gradient-hot">GAMES EXHAUSTED</h2>
         <p className="text-muted-foreground">
-          You've used your 2 free daily games. Go premium for unlimited play! 🔥
+          You've used your free daily game. Go premium for unlimited play! 🔥
         </p>
 
         <StripePricingTable />

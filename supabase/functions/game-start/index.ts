@@ -14,7 +14,7 @@
 // This is also the single point of truth for the signed-in daily quota: a
 // session row is written here, at start, not when the player finishes — so
 // quitting before the last round no longer lets a free account dodge the
-// 2/day cap (the previous cap only counted completed games in game_scores).
+// 1/day cap (the previous cap only counted completed games in game_scores).
 //
 // Deploy: supabase functions deploy game-start --no-verify-jwt
 // (no-verify-jwt so the 401 that Supabase's own platform check would throw
@@ -27,7 +27,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const TOTAL_ROUNDS = 5;
-const MAX_DAILY_GAMES = 2;
+const MAX_DAILY_GAMES = 1;
 
 const ipHashSalt = Deno.env.get("IP_HASH_SALT") ?? "";
 

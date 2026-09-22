@@ -15,7 +15,7 @@ export default function Page() {
   // Playing requires a real account - no anonymous preview. Sign-in is
   // checked first and separately from the daily quota below, so a logged-
   // out visitor always lands on /auth, never on a paywall meant for
-  // signed-in players who've used today's games.
+  // signed-in players who've used today's game.
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
