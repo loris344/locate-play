@@ -37,7 +37,10 @@ function GlobalNav() {
   const router = useRouter();
   const pathname = usePathname();
 
-  if (pathname === "/subscription" || pathname === "/play") return null;
+  // trailingSlash: true (next.config.ts) means a direct load reports "/play/".
+  const path = pathname?.replace(/\/+$/, "") || "/";
+  // Hidden on /chat so it doesn't sit on top of the message input's send button.
+  if (path === "/subscription" || path === "/play" || path === "/chat") return null;
 
   return (
     <Button

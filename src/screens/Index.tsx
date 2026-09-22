@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import ActorNameTicker from '@/components/ActorNameTicker';
@@ -21,6 +21,9 @@ export default function Index() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Top bar */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+        <Button variant="outline" size="sm" onClick={() => navigate('/chat')}>
+          <MessageCircle className="h-4 w-4 mr-1" /> Chat
+        </Button>
         {user ? (
           <>
             <UserProfilePopover isSubscribed={isSubscribed} />
