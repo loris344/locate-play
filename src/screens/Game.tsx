@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase, Video } from "@/lib/supabase";
+import { supabase, Video, VideoClue } from "@/lib/supabase";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameAccess } from "@/hooks/useGameAccess";
@@ -9,6 +9,7 @@ import GameMap from "@/components/GameMap";
 import GameMapErrorBoundary from "@/components/GameMapErrorBoundary";
 import VideoPlayer from "@/components/VideoPlayer";
 import ScoreDisplay from "@/components/ScoreDisplay";
+import ClueReveal from "@/components/ClueReveal";
 import StripePaywall from "@/components/StripePaywall";
 import StripePricingTable from "@/components/StripePricingTable";
 import RoundTimer, { getTimeLabel } from "@/components/RoundTimer";
@@ -20,7 +21,7 @@ import { useRouter } from "next/navigation";
 
 const SEEN_KEY = "geogushing_seen_videos";
 
-type PlayableVideo = Omit<Video, "latitude" | "longitude">;
+type PlayableVideo = Omit<Video, "latitude" | "longitude" | "clues">;
 
 export default function Game() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function Game() {
   const [totalScore, setTotalScore] = useState(0);
   const [guessMarker, setGuessMarker] = useState<[number, number] | null>(null);
   const [answerMarker, setAnswerMarker] = useState<[number, number] | null>(null);
-  const [roundResult, setRoundResult] = useState<{ distance: number; score: number; timeMultiplier: number; baseScore: number } | null>(null);
+  const [roundResult, setRoundResult] = useState<{ distance: number; score: number; timeMultiplier: number; baseScore: number; clues?: VideoClue[] } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +148,7 @@ export default function Game() {
     }
 
     setAnswerMarker([data.correctLat, data.correctLng]);
-    setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
+    setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore, clues: data.clues });
     setTotalScore((prev) => prev + data.score);
 
     if (data.finished) {
@@ -178,7 +179,7 @@ export default function Game() {
     }
 
     setAnswerMarker([data.correctLat, data.correctLng]);
-    setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore });
+    setRoundResult({ distance: data.distance, score: data.score, timeMultiplier: data.timeMultiplier, baseScore: data.baseScore, clues: data.clues });
 
     if (data.finished) {
       gameAccess.recordGamePlayed();
@@ -340,6 +341,7 @@ export default function Game() {
               />
             )}
           </AnimatePresence>
+          {roundResult && <ClueReveal clues={roundResult.clues} />}
         </div>
 
         <div className="h-[32vh] min-h-[180px] max-h-[260px] lg:min-h-0 lg:h-auto lg:max-h-none lg:flex-none">

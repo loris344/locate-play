@@ -1,0 +1,29 @@
+// The /multiplayer backend: a Worker on a route of the existing
+// Cloudflare-proxied domain (the site itself is served by GitHub Pages;
+// only /api/multiplayer* is intercepted here) plus one Durable Object per
+// room, holding the players' sockets and the game state.
+//
+// Supabase is used the way the solo edge functions use it - a handful of
+// database calls per game (quota check, video pick, session rows, final
+// scores) - never Realtime. Access tokens are verified locally against the
+// project's public signing key, and profile photos are pulled from Supabase
+// storage only on a Cloudflare cache miss.
+//
+// Deploy: cd workers/multiplayer && npm install && npm run deploy
+// Secret (once): npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "geogushing-multiplayer",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "geogushing.com/api/multiplayer*", "zone_name": "geogushing.com" }],
+  "durable_objects": {
+    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }]
+  },
+  // SQLite-backed, the only Durable Object storage available on the free plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  "vars": {
+    "SUPABASE_URL": "https://ejdvrtflsvvylezymsft.supabase.co"
+  }
+}

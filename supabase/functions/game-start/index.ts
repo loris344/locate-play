@@ -102,10 +102,13 @@ Deno.serve(async (req) => {
 
   if (!subscribed) {
     const { startIso, endIso } = utcDayRange();
+    // Solo games only: multiplayer has its own daily free game, counted
+    // by the multiplayer Worker (see supabase/migration-multiplayer.sql).
     const { count } = await supabaseAdmin
       .from("game_sessions")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .eq("mode", "solo")
       .gte("created_at", startIso)
       .lt("created_at", endIso);
 
@@ -139,7 +142,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "Could not start game" }), { status: 500, headers: jsonHeaders });
   }
 
-  const videos = selected.map(({ latitude: _lat, longitude: _lng, ...rest }) => rest);
+  const videos = selected.map(({ latitude: _lat, longitude: _lng, clues: _clues, ...rest }) => rest);
 
   return new Response(JSON.stringify({ sessionId: session.id, videos }), { headers: jsonHeaders });
 });

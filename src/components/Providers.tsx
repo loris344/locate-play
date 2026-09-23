@@ -39,8 +39,9 @@ function GlobalNav() {
 
   // trailingSlash: true (next.config.ts) means a direct load reports "/play/".
   const path = pathname?.replace(/\/+$/, "") || "/";
-  // Hidden on /lounge so it doesn't sit on top of the message input's send button.
-  if (path === "/subscription" || path === "/play" || path === "/lounge") return null;
+  // Hidden on /multiplayer for the same reason as /play: it would sit on
+  // top of the GUESS button during a game.
+  if (path === "/subscription" || path === "/play" || path === "/multiplayer") return null;
 
   return (
     <Button

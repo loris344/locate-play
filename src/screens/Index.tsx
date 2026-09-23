@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck, MessagesSquare } from 'lucide-react';
+import { MapPin, Play, Globe, Trophy, LogIn, Crown, ShieldCheck, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameAccess } from '@/hooks/useGameAccess';
 import ActorNameTicker from '@/components/ActorNameTicker';
@@ -115,16 +115,13 @@ export default function Index() {
             <Trophy className="mr-2 h-5 w-5 text-secondary" /> TOP
           </Button>
           <Button
-            onClick={() => navigate('/lounge')}
+            onClick={() => navigate('/multiplayer')}
             size="lg"
             variant="outline"
             className="col-span-2 font-black text-lg px-6 py-6 h-auto border-2 border-accent/60 hover:scale-105 transition-transform"
           >
-            <span className="relative flex h-2.5 w-2.5 mr-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-            </span>
-            <MessagesSquare className="mr-2 h-5 w-5 text-accent" /> PLAYER LOUNGE
+            <Users className="mr-2 h-5 w-5 text-accent" /> MULTIPLAYER
+            <span className="ml-2 text-xs font-bold text-muted-foreground">play with friends</span>
           </Button>
         </motion.div>
 

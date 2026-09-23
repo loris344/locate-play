@@ -8,17 +8,25 @@ interface RoundTimerProps {
   stopped: boolean;
   onTimeUp: () => void;
   onElapsedChange?: (elapsed: number) => void;
+  // Multiplayer rounds end at a time the room decided (already converted to
+  // this device's clock); solo rounds just run ROUND_TIME from now.
+  deadline?: number;
 }
 
-export default function RoundTimer({ roundId, stopped, onTimeUp, onElapsedChange }: RoundTimerProps) {
-  const [deadline, setDeadline] = useState(() => Date.now() + ROUND_TIME * 1000);
-  const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
+function remainingSeconds(deadline: number) {
+  return Math.max(0, Math.min(ROUND_TIME, Math.ceil((deadline - Date.now()) / 1000)));
+}
+
+export default function RoundTimer({ roundId, stopped, onTimeUp, onElapsedChange, deadline: fixedDeadline }: RoundTimerProps) {
+  const [deadline, setDeadline] = useState(() => fixedDeadline ?? Date.now() + ROUND_TIME * 1000);
+  const [timeLeft, setTimeLeft] = useState(() => remainingSeconds(deadline));
 
   // Reset deadline only when round changes
   useEffect(() => {
-    setDeadline(Date.now() + ROUND_TIME * 1000);
-    setTimeLeft(ROUND_TIME);
-  }, [roundId]);
+    const next = fixedDeadline ?? Date.now() + ROUND_TIME * 1000;
+    setDeadline(next);
+    setTimeLeft(remainingSeconds(next));
+  }, [roundId, fixedDeadline]);
 
   useEffect(() => {
     if (stopped) return;

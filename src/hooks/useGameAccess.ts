@@ -138,10 +138,13 @@ export function useGameAccess(): GameAccess {
       // by the game-start edge function), not game_scores (only written on
       // completion) — so a player who quits mid-game still uses up their
       // daily slot instead of getting it back for free.
+      // Solo games only: multiplayer has its own daily free game, counted
+      // by the multiplayer Worker (see supabase/migration-multiplayer.sql).
       const { count, error } = await supabase
         .from('game_sessions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
+        .eq('mode', 'solo')
         .gte('created_at', startIso)
         .lte('created_at', endIso);
 

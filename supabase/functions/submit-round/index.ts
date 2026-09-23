@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 
   const { data: video, error: videoError } = await supabaseAdmin
     .from("videos")
-    .select("latitude, longitude")
+    .select("latitude, longitude, clues")
     .eq("id", videoId)
     .maybeSingle();
 
@@ -158,6 +158,7 @@ Deno.serve(async (req) => {
       timeMultiplier,
       correctLat: video.latitude,
       correctLng: video.longitude,
+      clues: video.clues ?? [],
       roundsCompleted,
       totalScore,
       finished,
