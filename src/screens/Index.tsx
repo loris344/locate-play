@@ -18,7 +18,7 @@ export default function Index() {
   const { isSubscribed } = useGameAccess();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 pt-20 pb-24 md:py-4 relative overflow-hidden">
       {/* Top bar */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
         {user ? (
@@ -46,7 +46,7 @@ export default function Index() {
         initial={{ y: -50 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center space-y-8 relative z-10 max-w-lg"
+        className="text-center space-y-6 md:space-y-8 relative z-10 max-w-lg w-full"
       >
         {/* Logo */}
         <div className="space-y-2">
@@ -60,7 +60,7 @@ export default function Index() {
             <br />
             GUSHING
           </motion.h1>
-          <p className="text-muted-foreground text-lg font-medium">
+          <p className="text-muted-foreground text-base md:text-lg font-medium px-2">
             Learn geography (and a few faces) while having fun 🌍🔥
           </p>
 
@@ -131,9 +131,9 @@ export default function Index() {
           </p>
         )}
 
-        <div className="flex items-center gap-3 bg-muted/60 backdrop-blur-sm rounded-full px-6 py-3 border border-border/50">
+        <div className="mx-auto flex w-fit max-w-full items-center gap-3 bg-muted/60 backdrop-blur-sm rounded-full px-5 py-2.5 border border-border/50">
           <ShieldCheck className="h-5 w-5 text-accent shrink-0" />
-          <span className="text-sm text-muted-foreground font-semibold">
+          <span className="text-xs md:text-sm text-muted-foreground font-semibold">
             100% SFW — Stream-safe, no explicit content
           </span>
         </div>
