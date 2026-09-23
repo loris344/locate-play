@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import type { LngLatLike, Map as MapLibreMap, MapMouseEvent, Marker as MapLibreMarker } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+
+type MapLibre = typeof import('maplibre-gl');
 
 interface GameMapProps {
   onGuess: (lat: number, lng: number) => void;
@@ -9,72 +13,28 @@ interface GameMapProps {
   disabled: boolean;
 }
 
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
+// MapLibre works in [lng, lat] order, and its zoom levels sit one step above Google's.
+const DEFAULT_CENTER: [number, number] = [0, 20];
+const DEFAULT_ZOOM = 1;
 
-const DEFAULT_CENTER = { lat: 20, lng: 0 };
-const DEFAULT_ZOOM = 2;
-const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-script';
-const GOOGLE_MAPS_API_KEY =
-  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyCc89CKlNNcOhvrUIrCmAB4app2WoFM1Q8';
+// OpenFreeMap serves OpenStreetMap data for free: no API key, no account, no usage cap.
+// The style carries the OpenStreetMap credit the licence requires. Swap `liberty` for `positron`
+// (minimal grey), `bright` or `dark` to change the look of the board.
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
-let googleMapsPromise: Promise<any> | null = null;
+const GUESS_COLOR = 'hsl(338, 90%, 56%)';
+const ANSWER_COLOR = 'hsl(168, 80%, 45%)';
 
-function loadGoogleMapsApi() {
-  if (window.google?.maps) {
-    return Promise.resolve(window.google.maps);
-  }
-
-  if (googleMapsPromise) {
-    return googleMapsPromise;
-  }
-
-  googleMapsPromise = new Promise((resolve, reject) => {
-    const existingScript = document.getElementById(GOOGLE_MAPS_SCRIPT_ID) as HTMLScriptElement | null;
-
-    const handleLoad = () => {
-      if (window.google?.maps) {
-        resolve(window.google.maps);
-        return;
-      }
-
-      googleMapsPromise = null;
-      reject(new Error('Google Maps loaded without the maps namespace.'));
-    };
-
-    const handleError = () => {
-      googleMapsPromise = null;
-      reject(new Error('Failed to load the Google Maps script.'));
-    };
-
-    if (existingScript) {
-      existingScript.addEventListener('load', handleLoad, { once: true });
-      existingScript.addEventListener('error', handleError, { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = GOOGLE_MAPS_SCRIPT_ID;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
-    script.async = true;
-    script.defer = true;
-    script.addEventListener('load', handleLoad, { once: true });
-    script.addEventListener('error', handleError, { once: true });
-    document.head.appendChild(script);
-  });
-
-  return googleMapsPromise;
+function toLngLat([lat, lng]: [number, number]): LngLatLike {
+  return [lng, lat];
 }
 
 export default function GameMap({ onGuess, guessMarker, answerMarker, disabled }: GameMapProps) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const guessMarkerRef = useRef<any>(null);
-  const answerMarkerRef = useRef<any>(null);
-  const [mapsApi, setMapsApi] = useState<any>(null);
+  const mapInstanceRef = useRef<MapLibreMap | null>(null);
+  const guessMarkerRef = useRef<MapLibreMarker | null>(null);
+  const answerMarkerRef = useRef<MapLibreMarker | null>(null);
+  const [maplibre, setMaplibre] = useState<MapLibre | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,29 +42,40 @@ export default function GameMap({ onGuess, guessMarker, answerMarker, disabled }
 
     async function initializeMap() {
       try {
-        const maps = await loadGoogleMapsApi();
+        // Imported on demand so the map engine only ships to players who reach a round.
+        const maplibreModule = await import('maplibre-gl');
+
+        // The tile worker is served from our own origin by scripts/copy-maplibre-worker.mjs;
+        // the bundler cannot resolve the path MapLibre builds for it at runtime.
+        maplibreModule.setWorkerUrl(`/maplibre/${maplibreModule.getVersion()}/maplibre-gl-worker.js`);
 
         if (cancelled || !mapElementRef.current) {
           return;
         }
 
-        setMapsApi(maps);
-        mapInstanceRef.current = new maps.Map(mapElementRef.current, {
+        const map = new maplibreModule.Map({
+          container: mapElementRef.current,
+          style: STYLE_URL,
           center: DEFAULT_CENTER,
           zoom: DEFAULT_ZOOM,
-          clickableIcons: false,
-          disableDefaultUI: true,
-          fullscreenControl: true,
-          gestureHandling: 'greedy',
-          mapTypeControl: false,
-          streetViewControl: false,
-          zoomControl: true,
+          maxZoom: 16,
+          attributionControl: { compact: true },
+          dragRotate: false,
+          pitchWithRotate: false,
+          touchPitch: false,
         });
+
+        map.touchZoomRotate.disableRotation();
+        map.addControl(new maplibreModule.NavigationControl({ showCompass: false }), 'top-left');
+        map.addControl(new maplibreModule.FullscreenControl(), 'top-right');
+
+        mapInstanceRef.current = map;
+        setMaplibre(maplibreModule);
       } catch (error) {
-        console.error('[GameMap] Google Maps failed to initialize', error);
+        console.error('[GameMap] MapLibre failed to initialize', error);
 
         if (!cancelled) {
-          setLoadError('Google Maps could not load in this preview.');
+          setLoadError('The map could not load in this preview.');
         }
       }
     }
@@ -113,72 +84,70 @@ export default function GameMap({ onGuess, guessMarker, answerMarker, disabled }
 
     return () => {
       cancelled = true;
+      guessMarkerRef.current = null;
+      answerMarkerRef.current = null;
+      mapInstanceRef.current?.remove();
+      mapInstanceRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !mapsApi) {
+    const map = mapInstanceRef.current;
+
+    if (!map || !maplibre) {
       return;
     }
 
-    const listener = mapInstanceRef.current.addListener('click', (event: any) => {
-      if (disabled || !event.latLng) {
+    const handleClick = (event: MapMouseEvent) => {
+      if (disabled) {
         return;
       }
 
-      onGuess(event.latLng.lat(), event.latLng.lng());
-    });
+      onGuess(event.lngLat.lat, event.lngLat.lng);
+    };
+
+    map.on('click', handleClick);
 
     return () => {
-      listener.remove();
+      map.off('click', handleClick);
     };
-  }, [disabled, mapsApi, onGuess]);
+  }, [disabled, maplibre, onGuess]);
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !mapsApi) {
+    const map = mapInstanceRef.current;
+
+    if (!map || !maplibre) {
       return;
     }
 
-    if (guessMarkerRef.current) {
-      guessMarkerRef.current.setMap(null);
-      guessMarkerRef.current = null;
-    }
-
-    if (answerMarkerRef.current) {
-      answerMarkerRef.current.setMap(null);
-      answerMarkerRef.current = null;
-    }
+    guessMarkerRef.current?.remove();
+    guessMarkerRef.current = null;
+    answerMarkerRef.current?.remove();
+    answerMarkerRef.current = null;
 
     if (guessMarker) {
-      guessMarkerRef.current = new mapsApi.Marker({
-        map: mapInstanceRef.current,
-        position: { lat: guessMarker[0], lng: guessMarker[1] },
-        title: 'Your guess',
-      });
+      const marker = new maplibre.Marker({ color: GUESS_COLOR }).setLngLat(toLngLat(guessMarker)).addTo(map);
+      marker.getElement().title = 'Your guess';
+      guessMarkerRef.current = marker;
     }
 
     if (answerMarker) {
-      answerMarkerRef.current = new mapsApi.Marker({
-        icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-        map: mapInstanceRef.current,
-        position: { lat: answerMarker[0], lng: answerMarker[1] },
-        title: 'Answer',
-      });
+      const marker = new maplibre.Marker({ color: ANSWER_COLOR }).setLngLat(toLngLat(answerMarker)).addTo(map);
+      marker.getElement().title = 'Answer';
+      answerMarkerRef.current = marker;
     }
 
     if (guessMarker && answerMarker) {
-      const bounds = new mapsApi.LatLngBounds();
-      bounds.extend({ lat: guessMarker[0], lng: guessMarker[1] });
-      bounds.extend({ lat: answerMarker[0], lng: answerMarker[1] });
-      mapInstanceRef.current.fitBounds(bounds);
+      const bounds = new maplibre.LngLatBounds(toLngLat(guessMarker), toLngLat(guessMarker));
+      bounds.extend(toLngLat(answerMarker));
+      map.fitBounds(bounds, { padding: 32, maxZoom: 6 });
       return;
     }
 
     if (!guessMarker && !answerMarker) {
-      mapInstanceRef.current.setCenter(DEFAULT_CENTER);
-      mapInstanceRef.current.setZoom(DEFAULT_ZOOM);
+      map.jumpTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM });
     }
-  }, [answerMarker, guessMarker, mapsApi]);
+  }, [answerMarker, guessMarker, maplibre]);
 
   if (loadError) {
     return (
@@ -189,8 +158,13 @@ export default function GameMap({ onGuess, guessMarker, answerMarker, disabled }
   }
 
   return (
-    <div className="w-full h-full rounded-lg overflow-hidden border-2 border-border">
-      <div ref={mapElementRef} className="h-full min-h-[300px] w-full" />
+    // The panel is height-constrained on phones and auto-height from `lg` up. The map is stretched
+    // to whatever the panel is rather than given a height of its own, so it never overflows its
+    // frame. MapLibre forces `position: relative` on its own container, hence the sizing layer.
+    <div className="relative h-full w-full min-h-[180px] overflow-hidden rounded-lg border-2 border-border lg:min-h-[300px]">
+      <div className="absolute inset-0">
+        <div ref={mapElementRef} className="h-full w-full" />
+      </div>
     </div>
   );
 }
