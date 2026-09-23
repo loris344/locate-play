@@ -19,7 +19,8 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, type VideoClue } from '@/lib/supabase';
+import ClueReveal from '@/components/ClueReveal';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ import GameMap from '@/components/GameMap';
 import GameMapErrorBoundary from '@/components/GameMapErrorBoundary';
 import VideoPlayer from '@/components/VideoPlayer';
 import RoundIntro from '@/components/RoundIntro';
-import RoundTimer, { getTimeLabel } from '@/components/RoundTimer';
+import RoundTimer from '@/components/RoundTimer';
 import StripePricingTable from '@/components/StripePricingTable';
 
 // Rooms run on a Cloudflare Worker + Durable Object (workers/multiplayer),
@@ -82,6 +83,7 @@ interface RoomVideo {
   country?: string;
   lat?: number;
   lng?: number;
+  clues?: VideoClue[] | null;
 }
 
 interface RoomState {
@@ -800,8 +802,6 @@ export default function Multiplayer() {
                 <div className="space-y-1">
                   {roundRanking.map((p, i) => {
                     const r = p.rounds[round];
-                    // "Lightning fast" next to +0 points reads as a joke at the player's expense.
-                    const label = r.score > 0 ? getTimeLabel(r.timeMultiplier) : '';
                     return (
                       <div
                         key={p.userId}
@@ -812,13 +812,13 @@ export default function Multiplayer() {
                         <span className={`flex-1 truncate font-bold ${p.userId === userId ? 'text-primary' : 'text-foreground'}`}>{p.username}</span>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {r.timedOut && r.lat === null ? "⏰ no guess" : `${Math.round(r.distance)} km`}
-                          {label && !r.timedOut ? ` ${label}` : ''}
                         </span>
                         <span className="font-black text-secondary shrink-0">+{r.score.toLocaleString()}</span>
                       </div>
                     );
                   })}
                 </div>
+                <ClueReveal clues={video.clues} />
                 {video.source_url && (
                   <div className="text-center">
                     <a

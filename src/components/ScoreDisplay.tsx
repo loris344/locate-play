@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink } from 'lucide-react';
-import { getTimeLabel } from './RoundTimer';
+import { motion } from 'framer-motion';
+import { ExternalLink } from 'lucide-react';
 
 interface ScoreDisplayProps {
   distance: number;
@@ -13,73 +11,30 @@ interface ScoreDisplayProps {
   sourceUrl?: string;
 }
 
-export default function ScoreDisplay({ distance, score, city, country, timeMultiplier, baseScore, sourceUrl }: ScoreDisplayProps) {
-  const [dismissed, setDismissed] = useState(false);
-
-  const getEmoji = (score: number) => {
-    if (score >= 4500) return '🔥🔥🔥';
-    if (score >= 3000) return '🔥🔥';
-    if (score >= 1500) return '🔥';
-    if (score >= 500) return '😏';
-    return '💀';
-  };
-
-  const getMessage = (score: number) => {
-    if (score >= 4500) return 'INSANE! You know your stuff!';
-    if (score >= 3000) return 'Pretty damn good!';
-    if (score >= 1500) return 'Not bad, keep grinding!';
-    if (score >= 500) return 'Room for improvement...';
-    return 'Bruh... way off!';
-  };
-
-  if (dismissed) return null;
-
-  const timeLabel = timeMultiplier !== undefined ? getTimeLabel(timeMultiplier) : '';
-  const multiplierColor =
-    timeMultiplier !== undefined && timeMultiplier >= 1.2
-      ? 'text-green-400'
-      : timeMultiplier !== undefined && timeMultiplier < 1
-        ? 'text-red-400'
-        : 'text-muted-foreground';
-
+// One compact line: the score, the distance and the answer. The clues (ClueReveal) sit right under it.
+export default function ScoreDisplay({ distance, score, city, country, sourceUrl }: ScoreDisplayProps) {
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        className="bg-card border-2 border-primary rounded-lg p-4 text-center space-y-1 relative"
-      >
-        <button
-          onClick={() => setDismissed(true)}
-          className="absolute top-2 right-2 bg-muted hover:bg-muted-foreground/20 rounded-full p-1.5 transition-colors"
-          aria-label="Close"
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="mt-1 flex items-center gap-3 rounded-lg border border-primary bg-card px-3 py-1.5"
+    >
+      <span className="text-lg font-black leading-none text-gradient-hot">{score.toLocaleString()} pts</span>
+      <span className="min-w-0 truncate text-xs text-muted-foreground">
+        {Math.round(distance)} km from <span className="font-bold text-secondary">{city}, {country}</span>
+      </span>
+      {sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-bold text-primary hover:underline"
         >
-          <X className="w-5 h-5 text-foreground" />
-        </button>
-        <div className="text-3xl">{getEmoji(score)}</div>
-        <div className="text-2xl font-black text-gradient-hot">{score.toLocaleString()} pts</div>
-        {timeMultiplier !== undefined && timeMultiplier !== 1 && (
-          <p className={`text-xs font-bold ${multiplierColor}`}>
-            {baseScore?.toLocaleString()} × {timeMultiplier}x {timeLabel}
-          </p>
-        )}
-        <p className="text-sm font-bold text-foreground">{getMessage(score)}</p>
-        <p className="text-xs text-muted-foreground">
-          {Math.round(distance)} km from <span className="text-secondary font-bold">{city}, {country}</span>
-        </p>
-        {sourceUrl && (
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 mt-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
-          >
-            <ExternalLink className="h-3.5 w-3.5" /> Watch Original
-          </a>
-        )}
-      </motion.div>
-    </AnimatePresence>
+          <ExternalLink className="h-3.5 w-3.5" /> Original
+        </a>
+      )}
+    </motion.div>
   );
 }

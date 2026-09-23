@@ -120,7 +120,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { data: allVideos, error } = await supabaseAdmin.from("videos").select("*");
+  // Only what the client needs before it guesses: coordinates and clues stay server-side (submit-round)
+  // and this keeps the egress small as the catalogue grows.
+  const { data: allVideos, error } = await supabaseAdmin
+    .from("videos")
+    .select("id, video_url, city, country, actor_name, actor_photo_url, source_url");
   if (error || !allVideos || allVideos.length === 0) {
     return new Response(JSON.stringify({ error: "No videos available" }), { status: 500, headers: jsonHeaders });
   }
@@ -142,7 +146,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "Could not start game" }), { status: 500, headers: jsonHeaders });
   }
 
-  const videos = selected.map(({ latitude: _lat, longitude: _lng, clues: _clues, ...rest }) => rest);
-
-  return new Response(JSON.stringify({ sessionId: session.id, videos }), { headers: jsonHeaders });
+  return new Response(JSON.stringify({ sessionId: session.id, videos: selected }), { headers: jsonHeaders });
 });

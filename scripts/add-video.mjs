@@ -4,8 +4,12 @@
 // row into the Supabase "videos" table pointing at the R2 public URL.
 //
 // Usage: node --env-file=.env.local scripts/add-video.mjs entries.json
-// entries.json: [{ url, start, end, latitude, longitude, city?, country?, filename?, actor_name?, actor_photo_url?, source_url? }]
+// entries.json: [{ url, start, end, latitude, longitude, city?, country?, filename?, actor_name?, actor_photo_url?, source_url?, clues? }]
 // city/country are reverse-geocoded from latitude/longitude when omitted.
+// skip (optional): [[a, b], ...] seconds relative to `start` to drop at encode time (promo cards inside the footage).
+// actor_photo (optional): LOCAL path of a portrait, uploaded to R2 as <filename>-actor.jpg -> actor_photo_url.
+// clues (optional, produced by pipeline/): [{ text, t?, crop, frame?, box? }] where crop/frame are LOCAL image
+// paths; they are uploaded to R2 next to the clip and stored in videos.clues as { text, t, crop_url, frame_url, box }.
 
 import { createClient } from '@supabase/supabase-js';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
@@ -153,6 +157,19 @@ async function downloadClip(url, startS, endS, rawPath) {
   ]);
 }
 
+// skip = [[a, b], ...] seconds relative to the clip start: promo/logo cards inserted in the footage
+// (detected by the pipeline) are dropped at encode time so the player never sees them.
+function skipFilters(skip) {
+  const ranges = (skip ?? []).filter((r) => Array.isArray(r) && r.length === 2 && r[1] > r[0]);
+  if (!ranges.length) return null;
+  const expr = ranges.map(([a, b]) => `between(t,${a},${b})`).join('+');
+  return {
+    video: `select='not(${expr})',setpts=N/FRAME_RATE/TB`,
+    audio: `aselect='not(${expr})',asetpts=N/SR/TB`,
+    removed: ranges.reduce((s, [a, b]) => s + (b - a), 0),
+  };
+}
+
 function planCompression(durationS) {
   const targetTotalKbps = (TARGET_SIZE_MB * 8192 * 0.92) / durationS;
   const videoKbps = Math.round(Math.min(MAX_VIDEO_KBPS, Math.max(MIN_VIDEO_KBPS, targetTotalKbps - AUDIO_KBPS)));
@@ -160,12 +177,20 @@ function planCompression(durationS) {
   return { videoKbps, maxHeight };
 }
 
-async function compress(rawPath, outPath, durationS) {
-  const { videoKbps, maxHeight } = planCompression(durationS);
+async function compress(rawPath, outPath, durationS, skip) {
+  const cut = skipFilters(skip);
+  const { videoKbps, maxHeight } = planCompression(durationS - (cut?.removed ?? 0));
+  // The raw download starts at the keyframe before the requested start: trim that lead so the
+  // skip ranges (relative to the requested start) line up.
+  const { stdout } = await execFileAsync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', rawPath]);
+  const lead = Math.max(0, parseFloat(stdout) - durationS);
   await execFileAsync('ffmpeg', [
     '-y',
+    '-ss', lead.toFixed(3),
     '-i', rawPath,
-    '-vf', `scale=-2:'min(ih,${maxHeight})'`,
+    '-t', durationS.toFixed(3),
+    '-vf', `${cut ? cut.video + ',' : ''}scale=-2:'min(ih,${maxHeight})'`,
+    ...(cut ? ['-af', cut.audio] : []),
     '-c:v', 'libx264',
     '-profile:v', 'main',
     '-preset', 'veryfast',
@@ -209,7 +234,7 @@ async function processEntry(entry) {
     await downloadClip(url, startS, endS, rawPath);
 
     console.log(`[${url}] compressing (target ~${TARGET_SIZE_MB}MB)...`);
-    await compress(rawPath, outPath, endS - startS);
+    await compress(rawPath, outPath, endS - startS, entry.skip);
 
     const fileBuffer = await fs.readFile(outPath);
     const sizeMB = (fileBuffer.byteLength / 1024 / 1024).toFixed(2);
@@ -228,6 +253,44 @@ async function processEntry(entry) {
 
     const publicUrl = `${R2_PUBLIC_URL}/${storagePath}`;
 
+    const clues = [];
+    for (const [i, clue] of (entry.clues ?? []).entries()) {
+      if (!clue?.text) continue;
+      if (!clue.crop) {
+        clues.push({ text: clue.text, t: clue.t ?? null, crop_url: null, frame_url: null, box: null });
+        continue;
+      }
+      const uploadImage = async (localPath, key) => {
+        await s3.send(new PutObjectCommand({
+          Bucket: R2_BUCKET,
+          Key: key,
+          Body: await fs.readFile(localPath),
+          ContentType: 'image/jpeg',
+          CacheControl: 'public, max-age=31536000, immutable',
+        }));
+        return `${R2_PUBLIC_URL}/${key}`;
+      };
+      // The game zooms into the whole frame itself (CSS), so only the frame is uploaded; the pre-cropped
+      // zoom is kept as a fallback only when there is no frame.
+      const frame_url = clue.frame ? await uploadImage(clue.frame, `${storageName}-clue-${i + 1}-frame.jpg`) : null;
+      const crop_url = frame_url ? null : await uploadImage(clue.crop, `${storageName}-clue-${i + 1}.jpg`);
+      clues.push({ text: clue.text, t: clue.t ?? null, crop_url, frame_url, box: clue.box ?? null });
+    }
+    if (clues.length) console.log(`[${url}] ${clues.length} clue image(s) uploaded`);
+
+    let actorPhotoUrl = entry.actor_photo_url ?? null;
+    if (!actorPhotoUrl && entry.actor_photo) {
+      const key = `${storageName}-actor.jpg`;
+      await s3.send(new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: await fs.readFile(entry.actor_photo),
+        ContentType: 'image/jpeg',
+        CacheControl: 'public, max-age=31536000, immutable',
+      }));
+      actorPhotoUrl = `${R2_PUBLIC_URL}/${key}`;
+    }
+
     const { error: insertError } = await supabase.from('videos').insert({
       video_url: publicUrl,
       latitude: entry.latitude,
@@ -235,8 +298,9 @@ async function processEntry(entry) {
       city,
       country,
       actor_name: entry.actor_name ?? null,
-      actor_photo_url: entry.actor_photo_url ?? null,
+      actor_photo_url: actorPhotoUrl,
       source_url: entry.source_url ?? url,
+      clues: clues.length ? clues : null,
     });
     if (insertError) throw new Error(`insert failed: ${insertError.message}`);
 

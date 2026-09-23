@@ -8,9 +8,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // A visual clue revealed after the guess (see supabase/migration-video-clues.sql).
 export interface VideoClue {
   text: string;
-  t?: number;
-  crop_url: string;
-  frame_url?: string;
+  t?: number | null;
+  crop_url?: string | null; // null for a text-only clue (language heard, etc.)
+  frame_url?: string | null;
   box?: [number, number, number, number]; // [ymin, xmin, ymax, xmax], 0-1, relative to frame_url
 }
 

@@ -10,7 +10,7 @@ interface RoundIntroProps {
 }
 
 export default function RoundIntro({ actorName, actorPhotoUrl, round, totalRounds }: RoundIntroProps) {
-  const displayName = actorName || "this location";
+  const displayName = actorName || (actorPhotoUrl ? "her" : "this location");
 
   return (
     <motion.div
@@ -30,8 +30,8 @@ export default function RoundIntro({ actorName, actorPhotoUrl, round, totalRound
         </span>
 
         {actorPhotoUrl && (
-          <Avatar className="h-28 w-28 border-4 border-primary shadow-glow">
-            <AvatarImage src={actorPhotoUrl} alt={actorName || "Actor"} />
+          <Avatar className="h-44 w-44 md:h-60 md:w-60 border-4 border-primary shadow-glow">
+            <AvatarImage src={actorPhotoUrl} alt={actorName || "Actor"} className="object-cover" />
             <AvatarFallback className="text-3xl font-black">
               {actorName?.[0] ?? "?"}
             </AvatarFallback>

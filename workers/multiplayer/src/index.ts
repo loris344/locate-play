@@ -579,7 +579,7 @@ export class GameRoom extends DurableObject<Env> {
 
     const all = await sb<RoomVideo[]>(
       this.env,
-      "videos?select=id,video_url,latitude,longitude,city,country,actor_name,actor_photo_url,source_url,clues",
+      "videos?select=id,video_url,latitude,longitude,city,country,actor_name,actor_photo_url,source_url",
     );
     const videos = pickVideos(all, seen);
     if (!videos) return this.sendError(hostWs, "no_videos", "Not enough videos available right now.");
@@ -669,6 +669,23 @@ export class GameRoom extends DurableObject<Env> {
     }
     room.status = "reveal";
     room.revealEndsAt = Date.now() + this.revealMs();
+    void this.loadClues(room.videos[room.round]);
+  }
+
+  // The clues shown on the reveal card are fetched per round (one tiny query) instead of for the
+  // whole catalogue at game start, to keep Supabase egress low. Clients get a second snapshot
+  // a moment after the reveal once they have arrived.
+  private async loadClues(video: RoomVideo | undefined) {
+    if (!video || video.clues !== undefined) return;
+    video.clues = null;
+    try {
+      const rows = await sb<{ clues: unknown[] | null }[]>(this.env, `videos?select=clues&id=eq.${video.id}`);
+      video.clues = rows[0]?.clues ?? [];
+    } catch {
+      video.clues = [];
+      return;
+    }
+    if (this.room?.status === "reveal") await this.commit();
   }
 
   private async advance() {

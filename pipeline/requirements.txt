@@ -1,0 +1,13 @@
+requests>=2.32
+beautifulsoup4>=4.12
+yt-dlp
+nudenet>=3.4
+opencv-python-headless
+pillow
+numpy
+google-genai>=1.60
+gspread>=6.1
+python-dotenv
+fastapi
+uvicorn[standard]
+pydantic>=2
