@@ -29,15 +29,43 @@ function getSourceInfo(url: string): { type: 'iframe' | 'video' | 'unsupported';
   }
 }
 
+// The sound choice is remembered on this device: once unmuted, every next round (and every next
+// game) starts with sound, as long as the browser allows it.
+const SOUND_KEY = 'geogushing_sound';
+
+function readSoundPreference(): boolean | null {
+  try {
+    const v = localStorage.getItem(SOUND_KEY);
+    return v === 'on' ? true : v === 'off' ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSoundPreference(on: boolean) {
+  try {
+    localStorage.setItem(SOUND_KEY, on ? 'on' : 'off');
+  } catch {
+    // private mode or storage blocked: the choice just won't stick
+  }
+}
+
 export default function VideoPlayer({ url }: VideoPlayerProps) {
   const source = useMemo(() => getSourceInfo(url), [url]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
 
+  // Apply the remembered choice after mount (not in the initial state, to keep the server-rendered
+  // markup and the first client render identical).
+  useEffect(() => {
+    if (readSoundPreference() === true) setMuted(false);
+  }, []);
+
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted;
       setMuted(videoRef.current.muted);
+      saveSoundPreference(!videoRef.current.muted);
     }
   };
 
@@ -49,16 +77,19 @@ export default function VideoPlayer({ url }: VideoPlayerProps) {
   // racing it with a redundant manual play() call here caused autoplay to
   // silently fail on some mobile browsers/networks.
   useEffect(() => {
-    if (source.type !== 'video') return;
+    if (source.type !== 'video' || muted) return;
     const video = videoRef.current;
-    if (!video || video.muted) return;
+    if (!video) return;
+    video.muted = false;
 
     video.play().catch(() => {
+      // The browser wants a tap before playing with sound: fall back to muted for this round only,
+      // the saved preference stays "on" so the next round tries again.
       video.muted = true;
       setMuted(true);
       video.play().catch(() => {});
     });
-  }, [source.src, source.type]);
+  }, [source.src, source.type, muted]);
 
   return (
     <div className="overflow-hidden rounded-lg border-2 border-border bg-card shadow-neon">
