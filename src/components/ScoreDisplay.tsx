@@ -21,7 +21,7 @@ export default function ScoreDisplay({ distance, score, city, country, sourceUrl
       transition={{ duration: 0.25 }}
       className="mt-1 flex items-center gap-3 rounded-lg border border-primary bg-card px-3 py-1.5"
     >
-      <span className="text-lg font-black leading-none text-gradient-hot">{score.toLocaleString()} pts</span>
+      <span className="shrink-0 whitespace-nowrap text-base font-black leading-none text-gradient-hot sm:text-lg">{score.toLocaleString()} pts</span>
       <span className="min-w-0 truncate text-xs text-muted-foreground">
         {Math.round(distance)} km from <span className="font-bold text-secondary">{city}, {country}</span>
       </span>

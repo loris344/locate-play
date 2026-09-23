@@ -23,6 +23,19 @@ const SEEN_KEY = "geogushing_seen_videos";
 
 type PlayableVideo = Omit<Video, "latitude" | "longitude" | "clues">;
 
+// Phones stack everything: once the guess is in, the video makes way for the map and the clues.
+function useIsPhone() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return phone;
+}
+
 export default function Game() {
   const router = useRouter();
   const navigate = router.push;
@@ -42,6 +55,7 @@ export default function Game() {
   const elapsedRef = useRef(0);
   const [timerActive, setTimerActive] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const isPhone = useIsPhone();
 
   // Show intro for 2.5 seconds before each round
   useEffect(() => {
@@ -325,8 +339,7 @@ export default function Game() {
 
       <div className="flex flex-col lg:grid lg:grid-rows-1 lg:grid-cols-2 gap-1 lg:gap-4 p-1 lg:p-4 h-[calc(100dvh-57px)] overflow-auto lg:overflow-hidden">
         <div className="min-h-0 flex flex-col">
-          {currentVideo && <VideoPlayer url={currentVideo.video_url} />}
-
+          {currentVideo && !(isPhone && roundResult) && <VideoPlayer url={currentVideo.video_url} />}
 
           <AnimatePresence>
             {roundResult && (
@@ -341,7 +354,7 @@ export default function Game() {
               />
             )}
           </AnimatePresence>
-          {roundResult && <ClueReveal clues={roundResult.clues} />}
+          {roundResult && !isPhone && <ClueReveal clues={roundResult.clues} />}
         </div>
 
         <div className="h-[32vh] min-h-[180px] max-h-[260px] lg:min-h-0 lg:h-auto lg:max-h-none lg:flex-none">
@@ -354,6 +367,11 @@ export default function Game() {
             />
           </GameMapErrorBoundary>
         </div>
+        {roundResult && isPhone && (
+          <div className="px-1">
+            <ClueReveal clues={roundResult.clues} />
+          </div>
+        )}
 
         <div className="sticky bottom-0 z-10 flex gap-2 pb-[max(env(safe-area-inset-bottom),4px)] bg-background pt-1 lg:col-span-1 lg:col-start-2">
           {!roundResult ? (
